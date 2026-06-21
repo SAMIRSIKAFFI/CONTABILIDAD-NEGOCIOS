@@ -37,7 +37,7 @@ export default function Costos() {
         <div>
           <h1 className="page-title">🏭 Panel de Costos</h1>
           <p className="page-subtitle">
-            Proyecto: <strong style={{ color: "var(--accent)" }}>{project?.icon} {project?.name}</strong> — Registra los costos de producción y operación
+            Registra los costos de producción y operación del proyecto
           </p>
         </div>
       </div>

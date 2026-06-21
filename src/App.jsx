@@ -74,11 +74,11 @@ function MainApp({ project, onBack }) {
             <div>
               <h1 className="brand-title" style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
                 {project.name}
-                <span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.55)' }}>— ContaNegocios</span>
+                <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text3)' }}>— ContaNegocios</span>
               </h1>
               <p className="brand-sub">
                 <span
-                  style={{ color: 'rgba(255,255,255,0.75)', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+                  style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
                   onClick={() => onBack()}
                   title="Volver a la lista de proyectos"
                 >
@@ -88,9 +88,9 @@ function MainApp({ project, onBack }) {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', textAlign: 'right', marginRight: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'right', marginRight: 4 }}>
               <div>{profile?.full_name || profile?.email}</div>
-              <div style={{ textTransform: 'capitalize', color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{profile?.role}</div>
+              <div style={{ textTransform: 'capitalize', color: 'var(--text3)', fontSize: 11 }}>{profile?.role}</div>
             </div>
 
             {isSuperAdmin && (

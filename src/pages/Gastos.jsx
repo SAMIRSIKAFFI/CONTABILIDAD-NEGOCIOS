@@ -37,7 +37,7 @@ export default function Gastos() {
         <div>
           <h1 className="page-title">💸 Panel de Gastos</h1>
           <p className="page-subtitle">
-            Proyecto: <strong style={{ color: "var(--accent)" }}>{project?.icon} {project?.name}</strong> — Registra y controla todos los gastos
+            Registra y controla todos los gastos del proyecto
           </p>
         </div>
       </div>

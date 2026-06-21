@@ -37,7 +37,7 @@ export default function Ingresos() {
         <div>
           <h1 className="page-title">💰 Panel de Ingresos</h1>
           <p className="page-subtitle">
-            Proyecto: <strong style={{ color: "var(--accent)" }}>{project?.icon} {project?.name}</strong> — Registra y gestiona todos los ingresos
+            Registra y gestiona todos los ingresos del proyecto
           </p>
         </div>
       </div>
