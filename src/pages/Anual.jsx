@@ -1,6 +1,6 @@
 import { useApp } from "../context/AppContext";
+import { fmt, fmtDate } from "../utils/format";
 
-const fmt = (v, cur = "$") => `${cur} ${(+v || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Anual() {
   const { config, periods, getTotalesPorPeriodo } = useApp();

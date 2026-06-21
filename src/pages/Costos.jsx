@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { fmt, fmtDate } from "../utils/format";
 import TransactionModal from "../components/TransactionModal";
 import { useSortableData, SortableTh } from "../components/SortableTable";
 
-const fmt = (v, cur = "$") => `${cur} ${(+v || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Costos() {
   const { config, costos, addCosto, deleteCosto, updateCosto, isReadOnly, project } = useApp();
@@ -81,7 +81,7 @@ export default function Costos() {
             ) : sorted.map((item, i) => (
               <tr key={item.id}>
                 <td><span className="badge badge-yellow">#{i + 1}</span></td>
-                <td>{item.fecha}</td>
+                <td>{fmtDate(item.fecha)}</td>
                 <td><span className="badge badge-yellow">{item.categoria}</span></td>
                 <td>{item.descripcion}</td>
                 <td>{item.metodoPago}</td>

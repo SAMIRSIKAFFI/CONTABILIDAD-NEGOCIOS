@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { fmt, fmtDate } from "../utils/format";
 
-const fmt = (v, cur = "$") => `${cur} ${(+v || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Mensual() {
   const { config, periods, getTotalesPorPeriodo, ingresos, gastos, costos } = useApp();
@@ -76,7 +76,7 @@ export default function Mensual() {
               ].sort((a, b) => (a.fecha||"").localeCompare(b.fecha||"")).map(item => (
                 <tr key={item.id}>
                   <td><span className={`badge badge-${item.tipo === "Ingreso" ? "green" : item.tipo === "Gasto" ? "red" : "yellow"}`}>{item.tipo}</span></td>
-                  <td>{item.fecha}</td><td>{item.categoria}</td><td>{item.descripcion}</td>
+                  <td>{fmtDate(item.fecha)}</td><td>{item.categoria}</td><td>{item.descripcion}</td>
                   <td className="num-neutral">{fmt(item.bruto, config.currency)}</td>
                   <td>{fmt(item.valorImpuesto, config.currency)}</td>
                   <td className="num-positive">{fmt(item.totalNeto, config.currency)}</td>

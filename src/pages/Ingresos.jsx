@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { fmt, fmtDate } from "../utils/format";
 import TransactionModal from "../components/TransactionModal";
 import { useSortableData, SortableTh } from "../components/SortableTable";
 
-const fmt = (v, cur = "$") => `${cur} ${(+v || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Ingresos() {
   const { config, ingresos, addIngreso, deleteIngreso, updateIngreso, isReadOnly, project } = useApp();
@@ -80,7 +80,7 @@ export default function Ingresos() {
             ) : sorted.map((item, i) => (
               <tr key={item.id}>
                 <td><span className="badge badge-blue">#{i + 1}</span></td>
-                <td>{item.fecha}</td>
+                <td>{fmtDate(item.fecha)}</td>
                 <td><span className="badge badge-green">{item.categoria}</span></td>
                 <td>{item.descripcion}</td>
                 <td>{item.metodoPago}</td>

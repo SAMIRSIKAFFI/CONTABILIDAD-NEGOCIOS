@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { fmt, fmtDate } from "../utils/format";
 
-const fmt = (v, cur = "$") => `${cur} ${(+v || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Diario() {
   const { config, ingresos, gastos, costos } = useApp();
@@ -42,7 +42,7 @@ export default function Diario() {
       </div>
 
       <div className="card" style={{ marginBottom: 24 }}>
-        <div className="card-title">Resumen del Día — {selectedDate}</div>
+        <div className="card-title">Resumen del Día — {fmtDate(selectedDate)}</div>
         <div className="grid-4">
           <StatBox label="Ingresos Netos" value={fmt(ingresosNetos, config.currency)} color="green" />
           <StatBox label="Gastos Totales" value={fmt(gastosTotales, config.currency)} color="red" />
