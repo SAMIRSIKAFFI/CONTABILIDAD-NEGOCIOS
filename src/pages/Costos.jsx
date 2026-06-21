@@ -1,0 +1,95 @@
+import { useState } from "react";
+import { useApp } from "../context/AppContext";
+import TransactionModal from "../components/TransactionModal";
+
+const fmt = (v, cur = "$") => `${cur} ${(+v || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export default function Costos() {
+  const { config, costos, addCosto, deleteCosto, updateCosto, isReadOnly } = useApp();
+  const [modal, setModal] = useState(null);
+
+  const fields = [
+    { key: "fecha", label: "Fecha", type: "date", required: true },
+    { key: "categoria", label: "Categoría", type: "select", options: config.categoriasCostos, required: true },
+    { key: "descripcion", label: "Descripción", type: "text" },
+    { key: "metodoPago", label: "Método de Pago", type: "select", options: config.metodosPago },
+    { key: "costoTotal", label: "Costo Total", type: "number", required: true, step: "0.01", min: "0" },
+    { key: "impuesto", label: "Impuesto (%)", type: "number", step: "0.01", min: "0" },
+    { key: "notas", label: "Notas", type: "textarea" },
+  ];
+
+  const totBruto = costos.reduce((s, x) => s + (x.costoTotal||0), 0);
+  const totImp = costos.reduce((s, x) => s + (x.valorImpuesto||0), 0);
+  const totNeto = costos.reduce((s, x) => s + (x.totalNeto||0), 0);
+
+  const handleSave = (form) => {
+    if (modal.mode === "edit") updateCosto(modal.data.id, form);
+    else addCosto(form);
+    setModal(null);
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">🏭 Panel de Costos</h1>
+          <p className="page-subtitle">Registra los costos de producción y operación</p>
+        </div>
+      </div>
+
+      <div className="stats-row">
+        <div className="stat-pill"><div className="label">Costos Brutos</div><div className="value" style={{color:"var(--accent-yellow)"}}>{fmt(totBruto, config.currency)}</div></div>
+        <div className="stat-pill"><div className="label">Monto de Impuestos</div><div className="value">{fmt(totImp, config.currency)}</div></div>
+        <div className="stat-pill"><div className="label">Costos Netos</div><div className="value" style={{color:"var(--accent-yellow)"}}>{fmt(totNeto, config.currency)}</div></div>
+        <div className="stat-pill"><div className="label">Registros</div><div className="value">{costos.length}</div></div>
+      </div>
+
+      {!isReadOnly && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+          <button className="btn" style={{ background: "linear-gradient(135deg,#f9c846,#e8a830)", color: "#fff" }}
+            onClick={() => setModal({ mode: "add", data: { fecha: new Date().toISOString().split("T")[0], impuesto: 0 } })}>
+            + Nuevo Costo
+          </button>
+        </div>
+      )}
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Método Pago</th><th>Costo Total</th><th>Impuesto %</th><th>Valor Imp.</th><th>Total Neto</th><th>Notas</th>{!isReadOnly && <th>Acciones</th>}</tr>
+          </thead>
+          <tbody>
+            {costos.length === 0 ? (
+              <tr><td colSpan={11}><div className="empty-state"><div className="icon">🏭</div><p>No hay costos registrados</p></div></td></tr>
+            ) : costos.map((item, i) => (
+              <tr key={item.id}>
+                <td><span className="badge badge-yellow">#{i + 1}</span></td>
+                <td>{item.fecha}</td>
+                <td><span className="badge badge-yellow">{item.categoria}</span></td>
+                <td>{item.descripcion}</td>
+                <td>{item.metodoPago}</td>
+                <td className="num-neutral">{fmt(item.costoTotal, config.currency)}</td>
+                <td>{item.impuesto || 0}%</td>
+                <td>{fmt(item.valorImpuesto, config.currency)}</td>
+                <td style={{ color: "var(--accent-yellow)", fontWeight: 600 }}>{fmt(item.totalNeto, config.currency)}</td>
+                <td>{item.notas}</td>
+                {!isReadOnly && (
+                  <td>
+                    <div className="td-actions">
+                      <button className="btn btn-ghost btn-sm" onClick={() => setModal({ mode: "edit", data: item })}>✏️</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => confirm("¿Eliminar costo?") && deleteCosto(item.id)}>🗑️</button>
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {modal && (
+        <TransactionModal title={modal.mode === "edit" ? "Editar Costo" : "Nuevo Costo"} fields={fields} initial={modal.data} onSave={handleSave} onClose={() => setModal(null)} />
+      )}
+    </div>
+  );
+}
