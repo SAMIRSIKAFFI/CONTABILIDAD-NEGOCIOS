@@ -45,7 +45,8 @@ function MainApp({ project, onBack }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('cn_theme', theme)
-  }, [theme])
+    document.title = `${project.name} — ContaNegocios`
+  }, [theme, project.name])
 
   const renderPage = () => {
     switch (activeTab) {
@@ -69,13 +70,19 @@ function MainApp({ project, onBack }) {
       <div className="app">
         <header className="app-header">
           <div className="header-brand">
-            <div className="brand-icon">₿</div>
+            <div className="brand-icon">{project.icon || '₿'}</div>
             <div>
-              <h1 className="brand-title">ContaNegocios</h1>
+              <h1 className="brand-title" style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                {project.name}
+                <span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.55)' }}>— ContaNegocios</span>
+              </h1>
               <p className="brand-sub">
-                {project.icon} {project.name} •{' '}
-                <span style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }} onClick={() => onBack()}>
-                  Cambiar proyecto
+                <span
+                  style={{ color: 'rgba(255,255,255,0.75)', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+                  onClick={() => onBack()}
+                  title="Volver a la lista de proyectos"
+                >
+                  ⇄ Cambiar de proyecto
                 </span>
               </p>
             </div>

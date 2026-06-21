@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
 import TransactionModal from "../components/TransactionModal";
+import { useSortableData, SortableTh } from "../components/SortableTable";
 
 const fmt = (v, cur = "$") => `${cur} ${(+v || 0).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function Costos() {
-  const { config, costos, addCosto, deleteCosto, updateCosto, isReadOnly } = useApp();
+  const { config, costos, addCosto, deleteCosto, updateCosto, isReadOnly, project } = useApp();
   const [modal, setModal] = useState(null);
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSortableData(costos, "fecha", "desc");
 
   const fields = [
     { key: "fecha", label: "Fecha", type: "date", required: true },
@@ -33,7 +36,9 @@ export default function Costos() {
       <div className="page-header">
         <div>
           <h1 className="page-title">🏭 Panel de Costos</h1>
-          <p className="page-subtitle">Registra los costos de producción y operación</p>
+          <p className="page-subtitle">
+            Proyecto: <strong style={{ color: "var(--accent)" }}>{project?.icon} {project?.name}</strong> — Registra los costos de producción y operación
+          </p>
         </div>
       </div>
 
@@ -56,12 +61,24 @@ export default function Costos() {
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>#</th><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Método Pago</th><th>Costo Total</th><th>Impuesto %</th><th>Valor Imp.</th><th>Total Neto</th><th>Notas</th>{!isReadOnly && <th>Acciones</th>}</tr>
+            <tr>
+              <th>#</th>
+              <SortableTh label="Fecha" sortKey="fecha" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+              <SortableTh label="Categoría" sortKey="categoria" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+              <th>Descripción</th>
+              <th>Método Pago</th>
+              <SortableTh label="Costo Total" sortKey="costoTotal" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+              <SortableTh label="Impuesto %" sortKey="impuesto" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+              <th>Valor Imp.</th>
+              <SortableTh label="Total Neto" sortKey="totalNeto" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+              <th>Notas</th>
+              {!isReadOnly && <th>Acciones</th>}
+            </tr>
           </thead>
           <tbody>
-            {costos.length === 0 ? (
+            {sorted.length === 0 ? (
               <tr><td colSpan={11}><div className="empty-state"><div className="icon">🏭</div><p>No hay costos registrados</p></div></td></tr>
-            ) : costos.map((item, i) => (
+            ) : sorted.map((item, i) => (
               <tr key={item.id}>
                 <td><span className="badge badge-yellow">#{i + 1}</span></td>
                 <td>{item.fecha}</td>
