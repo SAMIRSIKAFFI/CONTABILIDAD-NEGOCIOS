@@ -67,10 +67,10 @@ export default function Gastos() {
               <SortableTh label="Categoría" sortKey="categoria" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
               <th>Descripción</th>
               <th>Método Pago</th>
-              <SortableTh label="Gasto Total" sortKey="gastoTotal" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-              <SortableTh label="Impuesto %" sortKey="impuesto" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
-              <th>Valor Imp.</th>
-              <SortableTh label="Total Neto" sortKey="totalNeto" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
+              <SortableTh label="Gasto Total" sortKey="gastoTotal" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} align="right" />
+              <SortableTh label="Impuesto %" sortKey="impuesto" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} align="right" />
+              <th style={{ textAlign: "right" }}>Valor Imp.</th>
+              <SortableTh label="Total Neto" sortKey="totalNeto" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} align="right" />
               <th>Notas</th>
               {!isReadOnly && <th>Acciones</th>}
             </tr>
@@ -85,10 +85,10 @@ export default function Gastos() {
                 <td><span className="badge badge-red">{item.categoria}</span></td>
                 <td>{item.descripcion}</td>
                 <td>{item.metodoPago}</td>
-                <td className="num-neutral">{fmt(item.gastoTotal, config.currency)}</td>
-                <td>{item.impuesto || 0}%</td>
-                <td>{fmt(item.valorImpuesto, config.currency)}</td>
-                <td className="num-negative">{fmt(item.totalNeto, config.currency)}</td>
+                <td className="num-neutral num-col">{fmt(item.gastoTotal, config.currency)}</td>
+                <td className="num-col">{item.impuesto || 0}%</td>
+                <td className="num-col">{fmt(item.valorImpuesto, config.currency)}</td>
+                <td className="num-negative num-col">{fmt(item.totalNeto, config.currency)}</td>
                 <td>{item.notas}</td>
                 {!isReadOnly && (
                   <td>

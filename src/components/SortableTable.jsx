@@ -50,19 +50,27 @@ export function useSortableData(items, defaultKey = "fecha", defaultDir = "desc"
 /**
  * SortableTh - clickable <th> that shows sort arrow
  */
-export function SortableTh({ label, sortKey: key, currentKey, currentDir, onSort, style }) {
+export function SortableTh({ label, sortKey: key, currentKey, currentDir, onSort, style, align }) {
   const active = currentKey === key;
+  const isRight = align === "right";
   return (
     <th
       onClick={() => onSort(key)}
-      style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap", ...style }}
+      style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap", textAlign: isRight ? "right" : undefined, ...style }}
       title="Click para ordenar"
     >
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, justifyContent: isRight ? "flex-end" : "flex-start", width: "100%" }}>
+        {isRight && (
+          <span style={{ fontSize: 10, opacity: active ? 1 : 0.25, color: active ? "var(--accent)" : "inherit" }}>
+            {active ? (currentDir === "asc" ? "▲" : "▼") : "▲▼"}
+          </span>
+        )}
         {label}
-        <span style={{ fontSize: 10, opacity: active ? 1 : 0.25, color: active ? "var(--accent)" : "inherit" }}>
-          {active ? (currentDir === "asc" ? "▲" : "▼") : "▲▼"}
-        </span>
+        {!isRight && (
+          <span style={{ fontSize: 10, opacity: active ? 1 : 0.25, color: active ? "var(--accent)" : "inherit" }}>
+            {active ? (currentDir === "asc" ? "▲" : "▼") : "▲▼"}
+          </span>
+        )}
       </span>
     </th>
   );
