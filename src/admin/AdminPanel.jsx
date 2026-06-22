@@ -281,6 +281,7 @@ function ProjectModal({ data, icons, onSave, onClose }) {
           <h2 className="modal-title">{data.id ? 'Editar Proyecto' : 'Nuevo Proyecto'}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
+        <div className="modal-body">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-group">
             <label className="form-label">Nombre del Proyecto *</label>
@@ -305,6 +306,7 @@ function ProjectModal({ data, icons, onSave, onClose }) {
             </div>
           </div>
         </div>
+        </div>
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={() => form.name && onSave(form)}>{data.id ? 'Guardar Cambios' : 'Crear Proyecto'}</button>
@@ -323,6 +325,7 @@ function UserModal({ data, onSave, onClose }) {
           <h2 className="modal-title">Nuevo Usuario</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
+        <div className="modal-body">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-group">
             <label className="form-label">Nombre Completo *</label>
@@ -349,6 +352,7 @@ function UserModal({ data, onSave, onClose }) {
             💡 El usuario recibirá un correo para confirmar su cuenta. La contraseña puede cambiarse después.
           </div>
         </div>
+        </div>
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" onClick={() => form.full_name && form.email && form.password && onSave(form)}>Crear Usuario</button>
@@ -367,6 +371,7 @@ function MemberModal({ data, projects, users, onSave, onClose }) {
           <h2 className="modal-title">Asignar Usuario a Proyecto</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
+        <div className="modal-body">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-group">
             <label className="form-label">Proyecto *</label>
@@ -390,6 +395,7 @@ function MemberModal({ data, projects, users, onSave, onClose }) {
               <option value="readonly">Solo Lectura</option>
             </select>
           </div>
+        </div>
         </div>
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
