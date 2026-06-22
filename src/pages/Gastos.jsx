@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { fmt, fmtDate } from "../utils/format";
 import TransactionModal from "../components/TransactionModal";
+import RecurringPanel from "../components/RecurringPanel";
 import { useSortableData, SortableTh } from "../components/SortableTable";
 
 
@@ -31,6 +32,21 @@ export default function Gastos() {
     setModal(null);
   };
 
+  const handleUseTemplate = (tpl) => {
+    setModal({
+      mode: "add",
+      data: {
+        fecha: new Date().toISOString().split("T")[0],
+        categoria: tpl.categoria,
+        descripcion: tpl.descripcion,
+        metodoPago: tpl.metodoPago,
+        impuesto: tpl.impuesto || 0,
+        notas: tpl.notas || "",
+        gastoTotal: 0,
+      },
+    });
+  };
+
   return (
     <div>
       <div className="page-header">
@@ -41,6 +57,14 @@ export default function Gastos() {
           </p>
         </div>
       </div>
+
+      <RecurringPanel
+        type="gasto"
+        categorias={config.categoriasGastos}
+        metodosPago={config.metodosPago}
+        onUseTemplate={handleUseTemplate}
+        isReadOnly={isReadOnly}
+      />
 
       <div className="stats-row">
         <div className="stat-pill"><div className="label">Gastos Brutos</div><div className="value red">{fmt(totBruto, config.currency)}</div></div>

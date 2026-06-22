@@ -179,6 +179,51 @@ export function AppProvider({ children, project }) {
     setIngresos([]); setGastos([]); setCostos([])
   }, [projectId])
 
+  // ============================================================
+  // RECURRING TEMPLATES (plantillas de gastos/ingresos/costos recurrentes)
+  // ============================================================
+  const [templates, setTemplates] = useState([])
+
+  useEffect(() => {
+    if (!projectId || projectId === '__new__') return
+    fetchTemplates()
+  }, [projectId])
+
+  const fetchTemplates = async () => {
+    const { data } = await supabase
+      .from('recurring_templates')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('active', true)
+      .order('created_at')
+    if (data) setTemplates(data)
+  }
+
+  const addTemplate = useCallback(async (tpl) => {
+    if (isReadOnly) return
+    const record = { ...tpl, id: generateId(), project_id: projectId, active: true }
+    const { error } = await supabase.from('recurring_templates').insert(record)
+    if (!error) setTemplates(prev => [...prev, record])
+  }, [projectId, isReadOnly])
+
+  const deleteTemplate = useCallback(async (id) => {
+    if (isReadOnly) return
+    const { error } = await supabase.from('recurring_templates').update({ active: false }).eq('id', id)
+    if (!error) setTemplates(prev => prev.filter(t => t.id !== id))
+  }, [isReadOnly])
+
+  // Returns templates of a given type that have NOT been registered this month yet
+  const getPendingTemplates = useCallback((type, month, year) => {
+    const typeMap = { ingreso: ingresos, gasto: gastos, costo: costos }
+    const records = typeMap[type] || []
+    const usedThisMonth = new Set(
+      records.filter(r => r.month === month && r.year === year).map(r => `${r.categoria}|${r.descripcion}`)
+    )
+    return templates
+      .filter(t => t.type === type)
+      .filter(t => !usedThisMonth.has(`${t.categoria}|${t.descripcion}`))
+  }, [templates, ingresos, gastos, costos])
+
   const getIngresosPorPeriodo = useCallback((month, year) => ingresos.filter(x => x.month===month && x.year===year), [ingresos])
   const getGastosPorPeriodo = useCallback((month, year) => gastos.filter(x => x.month===month && x.year===year), [gastos])
   const getCostosPorPeriodo = useCallback((month, year) => costos.filter(x => x.month===month && x.year===year), [costos])
@@ -197,6 +242,7 @@ export function AppProvider({ children, project }) {
       costos, addCosto, deleteCosto, updateCosto,
       presupuesto, updatePresupuesto,
       importData, exportData, importFromBackup, clearAllData,
+      templates, addTemplate, deleteTemplate, getPendingTemplates,
       getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo, getTotalesPorPeriodo,
     }}>
       {children}
