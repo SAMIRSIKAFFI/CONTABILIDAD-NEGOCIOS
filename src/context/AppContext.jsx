@@ -224,6 +224,69 @@ export function AppProvider({ children, project }) {
       .filter(t => !usedThisMonth.has(`${t.categoria}|${t.descripcion}`))
   }, [templates, ingresos, gastos, costos])
 
+  // ============================================================
+  // TAX PAYMENTS (previsión IVA / IT / RC-IVA vs pago real)
+  // ============================================================
+  const [taxPayments, setTaxPayments] = useState([])
+
+  useEffect(() => {
+    if (!projectId || projectId === '__new__') return
+    fetchTaxPayments()
+  }, [projectId])
+
+  const fetchTaxPayments = async () => {
+    const { data } = await supabase
+      .from('tax_payments')
+      .select('*')
+      .eq('project_id', projectId)
+    if (data) setTaxPayments(data)
+  }
+
+  const saveTaxPayment = useCallback(async (taxType, periodKey, realPaid, paidDate, notes) => {
+    if (isReadOnly) return
+    const existing = taxPayments.find(t => t.tax_type === taxType && t.period_key === periodKey)
+    const record = {
+      id: existing?.id || generateId(),
+      project_id: projectId,
+      tax_type: taxType,
+      period_key: periodKey,
+      real_paid: realPaid,
+      paid_date: paidDate || null,
+      notes: notes || '',
+    }
+    const { error } = await supabase.from('tax_payments').upsert(record, { onConflict: 'project_id,tax_type,period_key' })
+    if (!error) {
+      setTaxPayments(prev => {
+        const filtered = prev.filter(t => !(t.tax_type === taxType && t.period_key === periodKey))
+        return [...filtered, record]
+      })
+    }
+    return !error
+  }, [projectId, isReadOnly, taxPayments])
+
+  const getTaxPayment = useCallback((taxType, periodKey) => {
+    return taxPayments.find(t => t.tax_type === taxType && t.period_key === periodKey)
+  }, [taxPayments])
+
+  // Calculates "Previsto" for a given tax type and month, based on gross income (ingresoTotal, not netted)
+  const getTaxForecast = useCallback((taxType, month, year) => {
+    const RATES = { iva: 0.13, it: 0.03, rciva: 0.125 }
+    const grossIncome = ingresos
+      .filter(x => x.month === month && x.year === year)
+      .reduce((s, x) => s + (x.ingresoTotal || 0), 0)
+    return grossIncome * (RATES[taxType] || 0)
+  }, [ingresos])
+
+  // RC-IVA forecast aggregated over a calendar quarter (sum of 3 months)
+  const getQuarterTaxForecast = useCallback((taxType, quarterKey) => {
+    // quarterKey format: "2026-Q2"
+    const [yearStr, qStr] = quarterKey.split('-Q')
+    const year = parseInt(yearStr)
+    const q = parseInt(qStr)
+    const months = [(q-1)*3 + 1, (q-1)*3 + 2, (q-1)*3 + 3]
+    return months.reduce((sum, m) => sum + getTaxForecast(taxType, m, year), 0)
+  }, [getTaxForecast])
+
   const getIngresosPorPeriodo = useCallback((month, year) => ingresos.filter(x => x.month===month && x.year===year), [ingresos])
   const getGastosPorPeriodo = useCallback((month, year) => gastos.filter(x => x.month===month && x.year===year), [gastos])
   const getCostosPorPeriodo = useCallback((month, year) => costos.filter(x => x.month===month && x.year===year), [costos])
@@ -243,6 +306,7 @@ export function AppProvider({ children, project }) {
       presupuesto, updatePresupuesto,
       importData, exportData, importFromBackup, clearAllData,
       templates, addTemplate, deleteTemplate, getPendingTemplates,
+      taxPayments, saveTaxPayment, getTaxPayment, getTaxForecast, getQuarterTaxForecast,
       getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo, getTotalesPorPeriodo,
     }}>
       {children}

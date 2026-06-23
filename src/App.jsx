@@ -14,6 +14,7 @@ import Mensual from './pages/Mensual'
 import Anual from './pages/Anual'
 import Flujo from './pages/Flujo'
 import Balance from './pages/Balance'
+import Impuestos from './pages/Impuestos'
 import ImportExport from './pages/ImportExport'
 import './index.css'
 
@@ -28,6 +29,7 @@ const TABS = [
   { id: 'anual', label: '📊 Anual' },
   { id: 'flujo', label: '🌊 Flujo' },
   { id: 'balance', label: '⚖️ Balance' },
+  { id: 'impuestos', label: '🧾 Impuestos' },
   { id: 'importexport', label: '📤 Importar/Exportar' },
 ]
 
@@ -60,6 +62,7 @@ function MainApp({ project, onBack }) {
       case 'anual': return <Anual />
       case 'flujo': return <Flujo />
       case 'balance': return <Balance />
+      case 'impuestos': return <Impuestos />
       case 'importexport': return <ImportExport />
       default: return <Ingresos />
     }
