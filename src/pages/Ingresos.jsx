@@ -14,7 +14,7 @@ export default function Ingresos() {
   const [showExport, setShowExport] = useState(false);
 
   const { sorted, sortKey, sortDir, toggleSort } = useSortableData(ingresos, "fecha", "desc");
-  const { filtered, search, setSearch, filterCat, setFilterCat } = useTableSearch(sorted);
+  const { filtered, search, setSearch, filterCat, setFilterCat, filterMes, setFilterMes, filterAno, setFilterAno, limpiar, hayFiltro } = useTableSearch(sorted);
   const { pageItems, page, totalPages, goTo, start, total } = usePagination(filtered, PAGE_SIZE);
 
   const fields = [
@@ -63,7 +63,7 @@ export default function Ingresos() {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, gap: 12, flexWrap: "wrap" }}>
-        <TableSearchBar search={search} onSearch={setSearch} filterCat={filterCat} onFilterCat={setFilterCat} categories={config.categoriasIngresos} placeholder="Buscar por descripción, categoría..." />
+        <TableSearchBar search={search} onSearch={setSearch} filterCat={filterCat} onFilterCat={setFilterCat} filterMes={filterMes} onFilterMes={setFilterMes} filterAno={filterAno} onFilterAno={setFilterAno} categories={config.categoriasIngresos} placeholder="Buscar..." limpiar={limpiar} hayFiltro={hayFiltro} />
         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <button className="btn btn-ghost" onClick={() => setShowExport(true)}>📤 Exportar</button>
           {!isReadOnly && (

@@ -82,40 +82,94 @@ function buildPageNumbers(current, total) {
   return [1, "…", current - 1, current, current + 1, "…", total];
 }
 
+const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
 // ─── useTableSearch ────────────────────────────────────────────
 export function useTableSearch(items, searchKeys = ["descripcion", "categoria", "notas"]) {
-  const [search, setSearch] = useState("");
+  const [search,    setSearch]    = useState("");
   const [filterCat, setFilterCat] = useState("");
+  const [filterMes, setFilterMes] = useState("");   // "YYYY-MM"
+  const [filterAno, setFilterAno] = useState("");   // "YYYY"
 
   const filtered = useMemo(() => {
     let res = items;
     if (filterCat) res = res.filter(x => x.categoria === filterCat);
+    if (filterAno) res = res.filter(x => String(x.year) === filterAno);
+    if (filterMes) {
+      const [y, m] = filterMes.split("-").map(Number);
+      res = res.filter(x => x.month === m && x.year === y);
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       res = res.filter(x => searchKeys.some(k => (x[k] ?? "").toString().toLowerCase().includes(q)));
     }
     return res;
-  }, [items, search, filterCat]);
+  }, [items, search, filterCat, filterMes, filterAno]);
 
-  return { filtered, search, setSearch, filterCat, setFilterCat };
+  const limpiar = () => { setSearch(""); setFilterCat(""); setFilterMes(""); setFilterAno(""); };
+  const hayFiltro = search || filterCat || filterMes || filterAno;
+
+  return { filtered, search, setSearch, filterCat, setFilterCat, filterMes, setFilterMes, filterAno, setFilterAno, limpiar, hayFiltro };
 }
 
 // ─── TableSearchBar ────────────────────────────────────────────
-export function TableSearchBar({ search, onSearch, filterCat, onFilterCat, categories, placeholder = "Buscar..." }) {
+export function TableSearchBar({ search, onSearch, filterCat, onFilterCat, filterMes, onFilterMes, filterAno, onFilterAno, categories, placeholder = "Buscar...", limpiar, hayFiltro }) {
+  // Años disponibles en los datos (hardcoded range)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
   return (
-    <div style={{ display: "flex", gap: 10, flex: 1, flexWrap: "wrap" }}>
-      <div style={{ position: "relative", flex: "1 1 200px", minWidth: 160 }}>
+    <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap", alignItems: "center" }}>
+      {/* Buscador texto */}
+      <div style={{ position: "relative", flex: "1 1 180px", minWidth: 150 }}>
         <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", fontSize: 14, pointerEvents: "none" }}>🔍</span>
         <input className="form-input" style={{ paddingLeft: 32, margin: 0 }} value={search} onChange={e => onSearch(e.target.value)} placeholder={placeholder} />
       </div>
+
+      {/* Filtro mes */}
+      {onFilterMes && (
+        <select className="form-select" style={{ flex: "0 0 auto", minWidth: 130, margin: 0 }}
+          value={filterMes} onChange={e => { onFilterMes(e.target.value); if (e.target.value && onFilterAno) onFilterAno(""); }}>
+          <option value="">Todos los meses</option>
+          {years.flatMap(y => MONTHS_ES.map((m, i) => (
+            <option key={`${y}-${i+1}`} value={`${y}-${String(i+1).padStart(2,"0")}`}>{m} {y}</option>
+          )))}
+        </select>
+      )}
+
+      {/* Filtro año */}
+      {onFilterAno && !filterMes && (
+        <select className="form-select" style={{ flex: "0 0 auto", minWidth: 90, margin: 0 }}
+          value={filterAno} onChange={e => onFilterAno(e.target.value)}>
+          <option value="">Todos los años</option>
+          {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
+        </select>
+      )}
+
+      {/* Filtro categoría */}
       {categories?.length > 0 && (
-        <select className="form-select" style={{ flex: "0 0 auto", minWidth: 140, margin: 0 }} value={filterCat} onChange={e => onFilterCat(e.target.value)}>
+        <select className="form-select" style={{ flex: "0 0 auto", minWidth: 140, margin: 0 }}
+          value={filterCat} onChange={e => onFilterCat(e.target.value)}>
           <option value="">Todas las categorías</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       )}
-      {(search || filterCat) && (
-        <button className="btn btn-ghost btn-sm" onClick={() => { onSearch(""); onFilterCat(""); }} style={{ flexShrink: 0 }}>✕ Limpiar</button>
+
+      {/* Botón limpiar */}
+      {hayFiltro && (
+        <button className="btn btn-ghost btn-sm" onClick={limpiar} style={{ flexShrink: 0 }}>✕ Limpiar</button>
+      )}
+
+      {/* Indicador de filtro activo */}
+      {filterMes && (
+        <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "rgba(79,142,247,0.15)", color: "var(--accent)", fontWeight: 700, flexShrink: 0 }}>
+          📅 {MONTHS_ES[parseInt(filterMes.split("-")[1])-1]} {filterMes.split("-")[0]}
+        </span>
+      )}
+      {filterAno && !filterMes && (
+        <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "rgba(79,142,247,0.15)", color: "var(--accent)", fontWeight: 700, flexShrink: 0 }}>
+          📅 Año {filterAno}
+        </span>
       )}
     </div>
   );
