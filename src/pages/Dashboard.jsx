@@ -214,7 +214,11 @@ export default function Dashboard() {
       <div className="grid-4" style={{ gap: 14, marginBottom: mesActual.retencionIngresos > 0 ? 10 : 20 }}>
         <KpiCard icon="💰" label="Ingresos Brutos del Mes" value={fmt(mesActual.ingresosBrutos || 0, cur)} color="var(--accent-green)" sub={`${MONTHS_ES[curMonth - 1]} ${curYear}`} />
         <KpiCard icon="💸" label="Gastos + Costos" value={fmt((mesActual.gastosTotales || 0) + (mesActual.costosTotales || 0), cur)} color="var(--accent-red)" sub="Mes actual" />
-        <KpiCard icon="📈" label="Utilidad del Mes" value={fmt(mesActual.ganancia || 0, cur)} color={(mesActual.ganancia || 0) >= 0 ? "var(--accent-green)" : "var(--accent-red)"} sub={(mesActual.ganancia || 0) >= 0 ? "Positiva ✓" : "Negativa ✗"} />
+        <KpiCard icon="📈" label="Utilidad Operativa" value={fmt(mesActual.ganancia || 0, cur)}
+          color={(mesActual.ganancia || 0) >= 0 ? "var(--accent-green)" : "var(--accent-red)"}
+          sub={(mesActual.retencionIngresos || 0) > 0
+            ? `Neta c/imp: ${fmt(mesActual.gananciaNeta || 0, cur)}`
+            : (mesActual.ganancia || 0) >= 0 ? "Positiva ✓" : "Negativa ✗"} />
         <KpiCard icon="🎯" label="Meta Anual" value={`${pctMeta}%`} color={pctMeta >= 100 ? "var(--accent-green)" : pctMeta >= 60 ? "#4f8ef7" : "var(--accent-red)"} sub={goal > 0 ? `${fmt(gananciaAnual, cur)} de ${fmt(goal, cur)}` : "Sin meta definida"} />
       </div>
 

@@ -38,7 +38,8 @@ export default function Anual() {
     .filter(g => (g.categoria || "").toUpperCase().includes("IMPUESTO"))
     .reduce((s, g) => s + (g.totalNeto || 0), 0);
 
-  const gananciaActual = totalIngresosNetos - totalGastos - totalCostos;
+  // Ganancia operativa = Brutos - Gastos - Costos (impuestos son obligación aparte)
+  const gananciaActual = totalIngresos - totalGastos - totalCostos;
   const metaAnual      = config.annualGoal;
   const progresso      = metaAnual > 0 ? Math.min(100, (gananciaActual / metaAnual) * 100) : 0;
 

@@ -264,13 +264,16 @@ export function AppProvider({ children, project }) {
 
   const getTotalesPorPeriodo = useCallback((month, year) => {
     const ing = getIngresosPorPeriodo(month, year), gas = getGastosPorPeriodo(month, year), cos = getCostosPorPeriodo(month, year)
-    const ingresosBrutos   = ing.reduce((s,x) => s+(x.ingresoTotal||0), 0)
+    const ingresosBrutos    = ing.reduce((s,x) => s+(x.ingresoTotal||0), 0)
     const retencionIngresos = ing.reduce((s,x) => s+(x.valorImpuesto||0), 0)
-    const ingresosNetos    = ing.reduce((s,x) => s+(x.totalNeto||0), 0)
-    const gastosTotales    = gas.reduce((s,x) => s+(x.totalNeto||0), 0)
-    const costosTotales    = cos.reduce((s,x) => s+(x.totalNeto||0), 0)
-    const ganancia         = ingresosNetos - gastosTotales - costosTotales
-    return { ingresosBrutos, retencionIngresos, ingresosNetos, gastosTotales, costosTotales, ganancia, impuestosIngresos: retencionIngresos, impuestosGastos: gas.reduce((s,x)=>s+(x.valorImpuesto||0),0) }
+    const ingresosNetos     = ing.reduce((s,x) => s+(x.totalNeto||0), 0)
+    const gastosTotales     = gas.reduce((s,x) => s+(x.totalNeto||0), 0)
+    const costosTotales     = cos.reduce((s,x) => s+(x.totalNeto||0), 0)
+    // Ganancia operativa = Ingresos Brutos - Gastos - Costos (impuestos son obligación aparte)
+    const ganancia          = ingresosBrutos - gastosTotales - costosTotales
+    // Ganancia neta = después de retención de impuestos sobre ingresos
+    const gananciaNeta      = ingresosNetos - gastosTotales - costosTotales
+    return { ingresosBrutos, retencionIngresos, ingresosNetos, gastosTotales, costosTotales, ganancia, gananciaNeta, impuestosIngresos: retencionIngresos, impuestosGastos: gas.reduce((s,x)=>s+(x.valorImpuesto||0),0) }
   }, [getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo])
 
   return (
