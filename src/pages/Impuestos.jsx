@@ -41,12 +41,39 @@ function taxStatus(deadline, hasPayment) {
   return { label: "PENDIENTE", color: "var(--text3)", bg: "var(--bg3)", border: "var(--border)", icon: "🕐" };
 }
 
+// ─── Datos históricos para importación masiva ──────────────────
+const HISTORICO_IVA_IT = [
+  { period:"2024-10", ivaReal:32136,     itReal:7575 },
+  { period:"2024-11", ivaReal:32352,     itReal:7625 },
+  { period:"2024-12", ivaReal:40776,     itReal:9570 },
+  { period:"2025-01", ivaReal:36580,     itReal:8663 },
+  { period:"2025-02", ivaReal:38285,     itReal:8993 },
+  { period:"2025-03", ivaReal:38285,     itReal:8993 },
+  { period:"2025-04", ivaReal:34821,     itReal:8178 },
+  { period:"2025-05", ivaReal:37489.26,  itReal:8795.46 },
+  { period:"2025-06", ivaReal:36183.80,  itReal:8493 },
+  { period:"2025-07", ivaReal:32792.07,  itReal:7612 },
+  { period:"2025-08", ivaReal:36474.88,  itReal:8570.09 },
+  { period:"2025-09", ivaReal:29688.34,  itReal:7000 },
+  { period:"2025-10", ivaReal:35642.55,  itReal:8369.75 },
+  { period:"2025-11", ivaReal:27809.50,  itReal:6332.46 },
+  { period:"2025-12", ivaReal:23167.39,  itReal:5410.23 },
+  { period:"2026-01", ivaReal:27274.21,  itReal:6423.23 },
+  { period:"2026-02", ivaReal:24587.54,  itReal:5787.61 },
+  { period:"2026-03", ivaReal:19731.17,  itReal:5223.77 },
+  { period:"2026-04", ivaReal:38447.27,  itReal:9411.45 },
+  { period:"2026-05", ivaReal:33627.55,  itReal:8923.15 },
+];
+
 export default function Impuestos() {
   const { config, periods, getTaxForecast, getQuarterTaxForecast, getTaxPayment, saveTaxPayment, isReadOnly } = useApp();
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear]   = useState(now.getFullYear());
+  const [showImport,   setShowImport]     = useState(false);
+  const [importing,    setImporting]      = useState(false);
+  const [importDone,   setImportDone]     = useState(false);
 
   const monthKey   = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
   const quarter    = getQuarter(selectedMonth);
@@ -68,17 +95,120 @@ export default function Impuestos() {
   const itStatus     = taxStatus(itPayInfo.deadline,   !!itPayment);
   const rcStatus     = taxStatus(rcPayInfo.deadline,   !!rcivaPayment);
 
+  // Detectar qué períodos ya están cargados
+  const yaExisten = HISTORICO_IVA_IT.filter(h => getTaxPayment("iva", h.period));
+  const pendientes = HISTORICO_IVA_IT.filter(h => !getTaxPayment("iva", h.period));
+
+  const handleImportarHistorico = async () => {
+    setImporting(true);
+    for (const h of HISTORICO_IVA_IT) {
+      const [y, m] = h.period.split("-").map(Number);
+      // Fecha de pago = día 16 del mes siguiente
+      const pm = m === 12 ? 1 : m + 1;
+      const py = m === 12 ? y + 1 : y;
+      const fechaPago = `${py}-${String(pm).padStart(2,"0")}-16`;
+      if (!getTaxPayment("iva", h.period))
+        await saveTaxPayment("iva", h.period, h.ivaReal, fechaPago, "Importado histórico");
+      if (!getTaxPayment("it", h.period))
+        await saveTaxPayment("it",  h.period, h.itReal,  fechaPago, "Importado histórico");
+    }
+    setImporting(false);
+    setImportDone(true);
+    setShowImport(false);
+  };
+
   return (
     <div>
       <div className="page-header">
         <div>
           <h1 className="page-title">🧾 Previsión de Impuestos</h1>
           <p className="page-subtitle">
-            IVA (13%) e IT (3%) — se pagan el <strong>16 del mes siguiente</strong> al período de ingreso &nbsp;·&nbsp;
+            IVA (13%) e IT (3%) — se pagan el <strong>16 del mes siguiente</strong> al período &nbsp;·&nbsp;
             RC-IVA (12.5%) — se paga el <strong>16 del mes siguiente al trimestre</strong>
           </p>
         </div>
+        {!isReadOnly && (
+          <div style={{ display:"flex", gap:8 }}>
+            {importDone && <span style={{ fontSize:12, color:"var(--accent-green)", fontWeight:700, alignSelf:"center" }}>✅ Histórico importado</span>}
+            <button className="btn btn-ghost" onClick={() => setShowImport(true)}>
+              📥 Cargar histórico IVA/IT
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* ── Modal de importación histórica ── */}
+      {showImport && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowImport(false)}>
+          <div className="modal" style={{ maxWidth: 680 }}>
+            <div className="modal-header">
+              <h2 className="modal-title">📥 Importar Histórico IVA/IT</h2>
+              <button className="modal-close" onClick={() => setShowImport(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom:14, padding:"10px 14px", background:"rgba(79,142,247,0.08)", borderRadius:8, fontSize:12, color:"var(--text2)" }}>
+                Se cargarán <strong>{pendientes.length} períodos</strong> (Oct 2024 → May 2026) con IVA real e IT real.
+                {yaExisten.length > 0 && <span style={{ color:"var(--accent-green)" }}> {yaExisten.length} ya estaban cargados y se omitirán.</span>}
+              </div>
+              <div style={{ maxHeight:380, overflowY:"auto" }}>
+                <table style={{ width:"100%", fontSize:12, borderCollapse:"collapse" }}>
+                  <thead>
+                    <tr style={{ background:"var(--bg3)", position:"sticky", top:0 }}>
+                      <th style={{ padding:"7px 10px", textAlign:"left", fontWeight:600, color:"var(--text3)" }}>Período</th>
+                      <th style={{ padding:"7px 10px", textAlign:"right", fontWeight:600, color:"var(--text3)" }}>IVA Real Pagado</th>
+                      <th style={{ padding:"7px 10px", textAlign:"right", fontWeight:600, color:"var(--text3)" }}>IT Real Pagado</th>
+                      <th style={{ padding:"7px 10px", textAlign:"center", fontWeight:600, color:"var(--text3)" }}>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {HISTORICO_IVA_IT.map((h, i) => {
+                      const [y, m] = h.period.split("-").map(Number);
+                      const label = `${MONTHS_ES[m-1]} ${y}`;
+                      const yaExiste = !!getTaxPayment("iva", h.period);
+                      return (
+                        <tr key={h.period} style={{ borderTop:"1px solid var(--border)", background: yaExiste ? "rgba(45,212,160,0.05)" : i%2===0?"transparent":"var(--bg3)" }}>
+                          <td style={{ padding:"6px 10px", fontWeight:600, color:"var(--text)" }}>{label}</td>
+                          <td style={{ padding:"6px 10px", textAlign:"right", color:"#4f8ef7", fontVariantNumeric:"tabular-nums" }}>
+                            {h.ivaReal.toLocaleString("es-BO", { minimumFractionDigits:2 })}
+                          </td>
+                          <td style={{ padding:"6px 10px", textAlign:"right", color:"#a78bfa", fontVariantNumeric:"tabular-nums" }}>
+                            {h.itReal.toLocaleString("es-BO", { minimumFractionDigits:2 })}
+                          </td>
+                          <td style={{ padding:"6px 10px", textAlign:"center" }}>
+                            {yaExiste
+                              ? <span style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(45,212,160,0.12)", color:"var(--accent-green)", fontWeight:700 }}>✅ Ya existe</span>
+                              : <span style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(79,142,247,0.12)", color:"#4f8ef7", fontWeight:700 }}>📥 Pendiente</span>
+                            }
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background:"var(--bg2)", fontWeight:700, borderTop:"2px solid var(--border)" }}>
+                      <td style={{ padding:"8px 10px" }}>TOTAL ({HISTORICO_IVA_IT.length} meses)</td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", color:"#4f8ef7" }}>
+                        {HISTORICO_IVA_IT.reduce((s,h)=>s+h.ivaReal,0).toLocaleString("es-BO",{minimumFractionDigits:2})}
+                      </td>
+                      <td style={{ padding:"8px 10px", textAlign:"right", color:"#a78bfa" }}>
+                        {HISTORICO_IVA_IT.reduce((s,h)=>s+h.itReal,0).toLocaleString("es-BO",{minimumFractionDigits:2})}
+                      </td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setShowImport(false)}>Cancelar</button>
+              <button className="btn btn-primary" disabled={importing || pendientes.length===0} onClick={handleImportarHistorico}
+                style={{ opacity: pendientes.length===0 ? 0.5 : 1 }}>
+                {importing ? "⏳ Importando..." : pendientes.length===0 ? "✅ Todo ya importado" : `📥 Importar ${pendientes.length} períodos`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selector de período */}
       <div className="form-row" style={{ maxWidth: 420, marginBottom: 24 }}>
