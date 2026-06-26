@@ -42,27 +42,28 @@ function taxStatus(deadline, hasPayment) {
 }
 
 // ─── Datos históricos para importación masiva ──────────────────
+// Datos extraídos directamente del archivo Excel "iva it.xlsx"
 const HISTORICO_IVA_IT = [
-  { period:"2024-10", ivaReal:32136,     itReal:7575 },
-  { period:"2024-11", ivaReal:32352,     itReal:7625 },
-  { period:"2024-12", ivaReal:40776,     itReal:9570 },
-  { period:"2025-01", ivaReal:36580,     itReal:8663 },
-  { period:"2025-02", ivaReal:38285,     itReal:8993 },
-  { period:"2025-03", ivaReal:38285,     itReal:8993 },
-  { period:"2025-04", ivaReal:34821,     itReal:8178 },
-  { period:"2025-05", ivaReal:37489.26,  itReal:8795.46 },
-  { period:"2025-06", ivaReal:36183.80,  itReal:8493 },
-  { period:"2025-07", ivaReal:32792.07,  itReal:7612 },
-  { period:"2025-08", ivaReal:36474.88,  itReal:8570.09 },
-  { period:"2025-09", ivaReal:29688.34,  itReal:7000 },
-  { period:"2025-10", ivaReal:35642.55,  itReal:8369.75 },
-  { period:"2025-11", ivaReal:27809.50,  itReal:6332.46 },
-  { period:"2025-12", ivaReal:23167.39,  itReal:5410.23 },
-  { period:"2026-01", ivaReal:27274.21,  itReal:6423.23 },
-  { period:"2026-02", ivaReal:24587.54,  itReal:5787.61 },
-  { period:"2026-03", ivaReal:19731.17,  itReal:5223.77 },
-  { period:"2026-04", ivaReal:38447.27,  itReal:9411.45 },
-  { period:"2026-05", ivaReal:33627.55,  itReal:8923.15 },
+  { period:"2024-10", ivaReal:32136,        itReal:7575 },
+  { period:"2024-11", ivaReal:32352,        itReal:7625 },
+  { period:"2024-12", ivaReal:40776,        itReal:9570 },
+  { period:"2025-01", ivaReal:36580,        itReal:8663 },
+  { period:"2025-02", ivaReal:38285,        itReal:8993 },
+  { period:"2025-03", ivaReal:38285,        itReal:8993 },
+  { period:"2025-04", ivaReal:34821,        itReal:8178 },
+  { period:"2025-05", ivaReal:37489.26,     itReal:8795.46 },
+  { period:"2025-06", ivaReal:36183.8,      itReal:8493 },
+  { period:"2025-07", ivaReal:32792.07,     itReal:7612 },
+  { period:"2025-08", ivaReal:36474.88,     itReal:8570.09 },
+  { period:"2025-09", ivaReal:29688.34,     itReal:7000 },
+  { period:"2025-10", ivaReal:35642.55,     itReal:8369.75 },
+  { period:"2025-11", ivaReal:27809.5,      itReal:6332.46 },
+  { period:"2025-12", ivaReal:23167.39,     itReal:5410.23 },
+  { period:"2026-01", ivaReal:27274.21,     itReal:6423.23 },
+  { period:"2026-02", ivaReal:24587.54,     itReal:5787.61 },
+  { period:"2026-03", ivaReal:19731.17,     itReal:5223.77 },
+  { period:"2026-04", ivaReal:38447.27,     itReal:9411.45 },
+  { period:"2026-05", ivaReal:33627.55,     itReal:8923.15 },
 ];
 
 export default function Impuestos() {
