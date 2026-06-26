@@ -29,7 +29,10 @@ const CONFIG_DEFAULTS = {
   categoriasGastos: ['Alquiler','Sueldos','Marketing','Servicios Públicos','Otros'],
   categoriasCostos: ['Materia Prima','Producción','Logística','Otros'],
   metodosPago: ['Efectivo','Tarjeta','Transferencia','Cheque'],
-  cuentaBancaria: { activa: false, banco: '', numeroCuenta: '', tipoCuenta: 'Cuenta Corriente', saldoInicial: 0, fechaSaldoInicial: '', metodosVinculados: [] },
+  cuentaBancaria:    { activa: false, banco: '', numeroCuenta: '', tipoCuenta: 'Cuenta Corriente', saldoInicial: 0, fechaSaldoInicial: '', metodosVinculados: [] },
+  personal:          [],
+  previsionesOtras:  [],
+  chequesPendientes: [],
 }
 
 export function AppProvider({ children, project }) {

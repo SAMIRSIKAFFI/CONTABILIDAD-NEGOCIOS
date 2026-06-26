@@ -6,6 +6,7 @@ import ProjectSelector from './auth/ProjectSelector'
 import AdminPanel from './admin/AdminPanel'
 import Dashboard from './pages/Dashboard'
 import Banco from './pages/Banco'
+import PrevisionesPage from './pages/Previsiones'
 import Configuracion from './pages/Configuracion'
 import Ingresos from './pages/Ingresos'
 import Gastos from './pages/Gastos'
@@ -23,6 +24,7 @@ import './index.css'
 const TABS = [
   { id: 'dashboard',    label: '📊 Monitor' },
   { id: 'banco',        label: '🏦 Banco' },
+  { id: 'previsiones',  label: '📋 Previsiones' },
   { id: 'ingresos',     label: '💰 Ingresos' },
   { id: 'gastos',       label: '💸 Gastos' },
   { id: 'costos',       label: '🏭 Costos' },
@@ -58,6 +60,7 @@ function MainApp({ project, onBack }) {
     switch (activeTab) {
       case 'dashboard':    return <Dashboard />
       case 'banco':        return <Banco />
+      case 'previsiones':  return <PrevisionesPage />
       case 'configuracion':return <Configuracion />
       case 'ingresos':     return <Ingresos />
       case 'gastos':       return <Gastos />
