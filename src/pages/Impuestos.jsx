@@ -64,7 +64,7 @@ const HISTORICO_IVA_IT = [
   { period:"2026-03", ivaReal:5201,    itReal:1742,    ivaPago:"2026-04-16", itPago:"2026-04-16" },
   { period:"2026-04", ivaReal:6216,    itReal:2071,    ivaPago:"2026-05-16", itPago:"2026-05-16" },
   { period:"2026-05", ivaReal:6747,    itReal:2246,    ivaPago:"2026-06-16", itPago:"2026-06-16" },
-  { period:"2026-06", ivaReal:6749,    itReal:2246,    ivaPago:"2026-07-16", itPago:"2026-07-16" },
+  // Jun-2026: NO incluir — aún no pagado, vence 16/Jul/2026
 ];
 
 // RC-IVA trimestral — Q1-2025 sin pago (usuario llenará manual)
@@ -298,6 +298,7 @@ export default function Impuestos() {
           payInfo={ivaPayInfo} status={ivaStatus}
           currency={config.currency}
           onSave={(real, date, notes) => saveTaxPayment("iva", monthKey, real, date, notes)}
+          onDelete={() => confirm("¿Eliminar el registro de pago IVA de este mes?") && deleteTaxPayment("iva", monthKey)}
           isReadOnly={isReadOnly}
           note="Se puede compensar hasta 30% con Compra de Facturas"
         />
@@ -308,6 +309,7 @@ export default function Impuestos() {
           payInfo={itPayInfo} status={itStatus}
           currency={config.currency}
           onSave={(real, date, notes) => saveTaxPayment("it", monthKey, real, date, notes)}
+          onDelete={() => confirm("¿Eliminar el registro de pago IT de este mes?") && deleteTaxPayment("it", monthKey)}
           isReadOnly={isReadOnly}
           note="No se compensa — siempre se paga el monto completo"
         />
@@ -355,7 +357,7 @@ function TimelineArrow({ label }) {
 }
 
 // ─── TaxCard ───────────────────────────────────────────────────
-function TaxCard({ icon, title, rate, forecast, payment, periodLabel, payInfo, status, currency, onSave, isReadOnly, note }) {
+function TaxCard({ icon, title, rate, forecast, payment, periodLabel, payInfo, status, currency, onSave, onDelete, isReadOnly, note }) {
   const [editing, setEditing] = useState(false);
   const [realPaid, setRealPaid] = useState(payment?.real_paid || 0);
   const [paidDate, setPaidDate] = useState(payment?.paid_date || payInfo.deadline.toISOString().split("T")[0]);
@@ -410,9 +412,16 @@ function TaxCard({ icon, title, rate, forecast, payment, periodLabel, payInfo, s
       {note && <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14, fontStyle: "italic" }}>{note}</p>}
 
       {!isReadOnly && !editing && (
-        <button className="btn btn-ghost btn-sm" style={{ width: "100%", justifyContent: "center" }} onClick={() => setEditing(true)}>
-          {payment ? "✏️ Editar pago real" : `+ Registrar pago (vence 16/${payInfo.label})`}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setEditing(true)}>
+            {payment ? "✏️ Editar pago real" : `+ Registrar pago (vence 16/${payInfo.label})`}
+          </button>
+          {payment && onDelete && (
+            <button className="btn btn-danger btn-sm" style={{ flexShrink: 0 }} onClick={onDelete} title="Eliminar registro">
+              🗑️
+            </button>
+          )}
+        </div>
       )}
       {editing && (
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>
