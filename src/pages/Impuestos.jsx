@@ -71,11 +71,11 @@ const HISTORICO_IVA_IT = [
 const HISTORICO_RCIVA = [
   { quarterKey:"2024-Q4", real:514,    pago:"2025-01-20", nota:"Q4-2024 (Oct-Nov-Dic) — después de compensación facturas" },
   // Q1-2025: sin pago, usuario llenará manual
-  { quarterKey:"2025-Q2", real:640.76, pago:"2025-07-16", nota:"Q2-2025 (Abr-May-Jun) — después de compensación facturas" },
-  { quarterKey:"2025-Q3", real:546,    pago:"2025-10-16", nota:"Q3-2025 (Jul-Ago-Sep) — después de compensación facturas" },
-  { quarterKey:"2025-Q4", real:546,    pago:"2026-01-16", nota:"Q4-2025 (Oct-Nov-Dic) — después de compensación facturas" },
-  { quarterKey:"2026-Q1", real:546,    pago:"2026-04-16", nota:"Q1-2026 (Ene-Feb-Mar) — después de compensación facturas" },
-  { quarterKey:"2026-Q2", real:546,    pago:"2026-07-16", nota:"Q2-2026 (Abr-May-Jun) — después de compensación facturas" },
+  { quarterKey:"2025-Q2", real:640.76, pago:"2025-07-20", nota:"Q2-2025 (Abr-May-Jun) — después de compensación facturas" },
+  { quarterKey:"2025-Q3", real:546,    pago:"2025-10-20", nota:"Q3-2025 (Jul-Ago-Sep) — después de compensación facturas" },
+  { quarterKey:"2025-Q4", real:546,    pago:"2026-01-20", nota:"Q4-2025 (Oct-Nov-Dic) — después de compensación facturas" },
+  { quarterKey:"2026-Q1", real:546,    pago:"2026-04-20", nota:"Q1-2026 (Ene-Feb-Mar) — después de compensación facturas" },
+  { quarterKey:"2026-Q2", real:546,    pago:"2026-07-20", nota:"Q2-2026 (Abr-May-Jun) — después de compensación facturas" },
 ];
 
 export default function Impuestos() {
