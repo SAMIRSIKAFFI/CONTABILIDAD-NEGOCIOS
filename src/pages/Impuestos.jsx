@@ -79,7 +79,7 @@ const HISTORICO_RCIVA = [
 ];
 
 export default function Impuestos() {
-  const { config, periods, getTaxForecast, getQuarterTaxForecast, getTaxPayment, saveTaxPayment, isReadOnly } = useApp();
+  const { config, periods, getTaxForecast, getQuarterTaxForecast, getTaxPayment, saveTaxPayment, deleteTaxPayment, isReadOnly } = useApp();
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -319,6 +319,7 @@ export default function Impuestos() {
         quarterKey={quarterKey} payInfo={rcPayInfo} status={rcStatus}
         currency={config.currency}
         onSave={(real, date, notes) => saveTaxPayment("rciva", quarterKey, real, date, notes)}
+        onDelete={() => confirm("¿Eliminar el registro de pago RC-IVA de este trimestre?") && deleteTaxPayment("rciva", quarterKey)}
         isReadOnly={isReadOnly}
         getTaxForecast={getTaxForecast}
       />
@@ -436,7 +437,7 @@ function TaxCard({ icon, title, rate, forecast, payment, periodLabel, payInfo, s
 }
 
 // ─── RC-IVA Card ───────────────────────────────────────────────
-function RcIvaCard({ forecast, payment, quarter, year, quarterKey, payInfo, status, currency, onSave, isReadOnly, getTaxForecast }) {
+function RcIvaCard({ forecast, payment, quarter, year, quarterKey, payInfo, status, currency, onSave, onDelete, isReadOnly, getTaxForecast }) {
   const [editing, setEditing] = useState(false);
   const [realPaid, setRealPaid] = useState(payment?.real_paid || 0);
   const [paidDate, setPaidDate] = useState(payment?.paid_date || payInfo.deadline.toISOString().split("T")[0]);
@@ -502,9 +503,16 @@ function RcIvaCard({ forecast, payment, quarter, year, quarterKey, payInfo, stat
       </p>
 
       {!isReadOnly && !editing && (
-        <button className="btn btn-ghost btn-sm" style={{ width: "100%", justifyContent: "center" }} onClick={() => setEditing(true)}>
-          {payment ? "✏️ Editar pago real" : `+ Registrar pago (vence ${payInfo.label})`}
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setEditing(true)}>
+            {payment ? "✏️ Editar pago real" : `+ Registrar pago (vence ${payInfo.label})`}
+          </button>
+          {payment && onDelete && (
+            <button className="btn btn-danger btn-sm" style={{ flexShrink: 0 }} onClick={onDelete} title="Eliminar registro de pago">
+              🗑️ Eliminar pago
+            </button>
+          )}
+        </div>
       )}
       {editing && (
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, marginTop: 4 }}>

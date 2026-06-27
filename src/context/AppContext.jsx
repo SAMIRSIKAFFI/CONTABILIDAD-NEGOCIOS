@@ -245,6 +245,15 @@ export function AppProvider({ children, project }) {
 
   const getTaxPayment = useCallback((taxType, periodKey) => taxPayments.find(t => t.tax_type === taxType && t.period_key === periodKey), [taxPayments])
 
+  const deleteTaxPayment = useCallback(async (taxType, periodKey) => {
+    if (isReadOnly) return
+    const { error } = await supabase.from('tax_payments').delete().eq('project_id', projectId).eq('tax_type', taxType).eq('period_key', periodKey)
+    if (!error) {
+      setTaxPayments(prev => prev.filter(t => !(t.tax_type === taxType && t.period_key === periodKey)))
+      toast.success('Pago eliminado')
+    } else { toast.error(`Error: ${error.message}`) }
+  }, [projectId, isReadOnly])
+
   const getTaxForecast = useCallback((taxType, month, year) => {
     const RATES = { iva: (config.tasaIVA ?? 13) / 100, it: (config.tasaIT ?? 3) / 100, rciva: (config.tasaRCIVA ?? 12.5) / 100 }
     const grossIncome = ingresos.filter(x => x.month === month && x.year === year).reduce((s, x) => s + (x.ingresoTotal || 0), 0)
@@ -285,7 +294,7 @@ export function AppProvider({ children, project }) {
       presupuesto, updatePresupuesto,
       importData, exportData, importFromBackup, clearAllData,
       templates, addTemplate, updateTemplate, deleteTemplate, getPendingTemplates,
-      taxPayments, saveTaxPayment, getTaxPayment, getTaxForecast, getQuarterTaxForecast,
+      taxPayments, saveTaxPayment, deleteTaxPayment, getTaxPayment, getTaxForecast, getQuarterTaxForecast,
       getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo, getTotalesPorPeriodo,
     }}>
       {children}
