@@ -112,13 +112,54 @@ const RCIVA_OFICINA_CENTRAL = [
   // Q2-2026: no pagado aún — vence 20/Jul/2026
 ];
 
+// CASA SAMIR - ORURO (Fuente: gastos + planilla RC IVA CASA SAMIR.xlsx)
+const HISTORICO_CASA_SAMIR = [
+  { period:"2024-10", ivaReal:4737,    itReal:1580,     ivaPago:"2024-11-16", itPago:"2024-11-16" },
+  { period:"2024-11", ivaReal:4325,    itReal:1580,     ivaPago:"2024-12-16", itPago:"2024-12-16" },
+  { period:"2024-12", ivaReal:4627,    itReal:1580,     ivaPago:"2025-01-16", itPago:"2025-01-16" },
+  { period:"2025-01", ivaReal:4767,    itReal:1580,     ivaPago:"2025-02-16", itPago:"2025-02-16" },
+  { period:"2025-02", ivaReal:4786,    itReal:1580,     ivaPago:"2025-03-17", itPago:"2025-03-17" },
+  { period:"2025-03", ivaReal:4732,    itReal:1540,     ivaPago:"2025-04-16", itPago:"2025-04-16" },
+  { period:"2025-04", ivaReal:4735,    itReal:1580,     ivaPago:"2025-05-16", itPago:"2025-05-16" },
+  { period:"2025-05", ivaReal:4749,    itReal:1580,     ivaPago:"2025-06-20", itPago:"2025-06-20" },
+  { period:"2025-06", ivaReal:4775,    itReal:1581,     ivaPago:"2025-07-16", itPago:"2025-07-16" },
+  { period:"2025-07", ivaReal:4653,    itReal:1581,     ivaPago:"2025-08-18", itPago:"2025-08-18" },
+  { period:"2025-08", ivaReal:4766,    itReal:1581,     ivaPago:"2025-09-16", itPago:"2025-09-16" },
+  { period:"2025-09", ivaReal:4842,    itReal:1580,     ivaPago:"2025-10-16", itPago:"2025-10-16" },
+  { period:"2025-10", ivaReal:4702,    itReal:1581,     ivaPago:"2025-11-17", itPago:"2025-11-17" },
+  { period:"2025-11", ivaReal:4671,    itReal:1581,     ivaPago:"2025-12-16", itPago:"2025-12-16" },
+  { period:"2025-12", ivaReal:4763,    itReal:1581,     ivaPago:"2026-01-16", itPago:"2026-01-16" },
+  { period:"2026-01", ivaReal:4767,    itReal:1581,     ivaPago:"2026-02-18", itPago:"2026-02-18" },
+  { period:"2026-02", ivaReal:4776,    itReal:1581,     ivaPago:"2026-03-16", itPago:"2026-03-16" },
+  { period:"2026-03", ivaReal:4768,    itReal:1581,     ivaPago:"2026-04-16", itPago:"2026-04-16" },
+  { period:"2026-04", ivaReal:4758,    itReal:1581,     ivaPago:"2026-05-18", itPago:"2026-05-18" },
+  { period:"2026-05", ivaReal:4760,    itReal:1581,     ivaPago:"2026-06-16", itPago:"2026-06-16" },
+  // Jun-2026: NO incluir — pendiente, vence 16/Jul/2026
+];
+
+const RCIVA_CASA_SAMIR = [
+  { quarterKey:"2024-Q4", real:485,     pago:"2025-01-20", nota:"Q4-2024 — gastos: IMPUESTO TRIMESTRAL" },
+  { quarterKey:"2025-Q1", real:1118,    pago:"2025-04-21", nota:"Q1-2025 — gastos: PAGO TRIMESTRAL ENE-FEB-MAR" },
+  { quarterKey:"2025-Q2", real:402.41,  pago:"2025-07-21", nota:"Q2-2025 — gastos: PAGO TRIMESTRAL ABR-MAY-JUN" },
+  { quarterKey:"2025-Q3", real:578,     pago:"2025-10-21", nota:"Q3-2025 — gastos: PAGO TRIMESTRAL JUL-AGO-SEP" },
+  { quarterKey:"2025-Q4", real:911.33,  pago:"2026-01-20", nota:"Q4-2025 — gastos: PAGO TRIMESTRAL OCT-NOV-DIC" },
+  { quarterKey:"2026-Q1", real:436,     pago:"2026-04-20", nota:"Q1-2026 — gastos: PAGO TRIMESTRAL ENE-FEB-MAR" },
+  // Q2-2026: no pagado aún — vence 20/Jul/2026
+];
+
 export default function Impuestos() {
   const { config, periods, getTaxForecast, getQuarterTaxForecast, getTaxPayment, saveTaxPayment, deleteTaxPayment, isReadOnly, project } = useApp();
 
   // Seleccionar datos históricos según el proyecto activo
-  const esOficinaCentral = (project?.name || "").toLowerCase().includes("oficina");
-  const HISTORICO_IVA_IT = esOficinaCentral ? HISTORICO_OFICINA_CENTRAL : HISTORICO_CASA_FAMILIA;
-  const HISTORICO_RCIVA  = esOficinaCentral ? RCIVA_OFICINA_CENTRAL    : RCIVA_CASA_FAMILIA;
+  const nombreProyecto = (project?.name || "").toLowerCase();
+  const esOficinaCentral = nombreProyecto.includes("oficina");
+  const esCasaSamir      = nombreProyecto.includes("samir");
+  const HISTORICO_IVA_IT = esOficinaCentral ? HISTORICO_OFICINA_CENTRAL
+                         : esCasaSamir      ? HISTORICO_CASA_SAMIR
+                         :                    HISTORICO_CASA_FAMILIA;
+  const HISTORICO_RCIVA  = esOficinaCentral ? RCIVA_OFICINA_CENTRAL
+                         : esCasaSamir      ? RCIVA_CASA_SAMIR
+                         :                    RCIVA_CASA_FAMILIA;
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
