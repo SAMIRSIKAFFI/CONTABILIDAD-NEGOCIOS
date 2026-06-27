@@ -21,13 +21,13 @@ function paymentMonthOf(incomeMonth, incomeYear) {
 // Mes en que se PAGA el RC-IVA de un trimestre (primer mes del siguiente trimestre, día 16)
 function rcIvaPaymentInfo(quarter, year) {
   const map = {
-    1: { month: 4, year, label: `16 Abr ${year}` },
-    2: { month: 7, year, label: `16 Jul ${year}` },
-    3: { month: 10, year, label: `16 Oct ${year}` },
-    4: { month: 1, year: year + 1, label: `16 Ene ${year + 1}` },
+    1: { month: 4, year, label: `20 Abr ${year}` },
+    2: { month: 7, year, label: `20 Jul ${year}` },
+    3: { month: 10, year, label: `20 Oct ${year}` },
+    4: { month: 1, year: year + 1, label: `20 Ene ${year + 1}` },
   };
   const info = map[quarter];
-  return { ...info, deadline: new Date(info.year, info.month - 1, 16) };
+  return { ...info, deadline: new Date(info.year, info.month - 1, 20) };
 }
 
 // Estado de un pago basado en vencimiento
