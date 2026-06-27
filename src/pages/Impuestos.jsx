@@ -100,18 +100,17 @@ export default function Impuestos() {
   const yaExisten = HISTORICO_IVA_IT.filter(h => getTaxPayment("iva", h.period));
   const pendientes = HISTORICO_IVA_IT.filter(h => !getTaxPayment("iva", h.period));
 
-  const handleImportarHistorico = async () => {
+  const handleImportarHistorico = async (forzar = false) => {
     setImporting(true);
     for (const h of HISTORICO_IVA_IT) {
       const [y, m] = h.period.split("-").map(Number);
-      // Fecha de pago = día 16 del mes siguiente
       const pm = m === 12 ? 1 : m + 1;
       const py = m === 12 ? y + 1 : y;
       const fechaPago = `${py}-${String(pm).padStart(2,"0")}-16`;
-      if (!getTaxPayment("iva", h.period))
-        await saveTaxPayment("iva", h.period, h.ivaReal, fechaPago, "Importado histórico");
-      if (!getTaxPayment("it", h.period))
-        await saveTaxPayment("it",  h.period, h.itReal,  fechaPago, "Importado histórico");
+      if (forzar || !getTaxPayment("iva", h.period))
+        await saveTaxPayment("iva", h.period, h.ivaReal, fechaPago, "Histórico Excel iva it.xlsx");
+      if (forzar || !getTaxPayment("it", h.period))
+        await saveTaxPayment("it",  h.period, h.itReal,  fechaPago, "Histórico Excel iva it.xlsx");
     }
     setImporting(false);
     setImportDone(true);
@@ -200,12 +199,19 @@ export default function Impuestos() {
                 </table>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowImport(false)}>Cancelar</button>
-              <button className="btn btn-primary" disabled={importing || pendientes.length===0} onClick={handleImportarHistorico}
-                style={{ opacity: pendientes.length===0 ? 0.5 : 1 }}>
-                {importing ? "⏳ Importando..." : pendientes.length===0 ? "✅ Todo ya importado" : `📥 Importar ${pendientes.length} períodos`}
+            <div className="modal-footer" style={{ justifyContent:"space-between" }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => handleImportarHistorico(true)}
+                disabled={importing}
+                style={{ fontSize:11, color:"var(--accent-red)", borderColor:"var(--accent-red)" }}>
+                {importing ? "⏳..." : "🔄 Reimportar (sobreescribir todo)"}
               </button>
+              <div style={{ display:"flex", gap:8 }}>
+                <button className="btn btn-ghost" onClick={() => setShowImport(false)}>Cancelar</button>
+                <button className="btn btn-primary" disabled={importing || pendientes.length===0} onClick={() => handleImportarHistorico(false)}
+                  style={{ opacity: pendientes.length===0 ? 0.5 : 1 }}>
+                  {importing ? "⏳ Importando..." : pendientes.length===0 ? "✅ Todo ya importado" : `📥 Importar ${pendientes.length} períodos`}
+                </button>
+              </div>
             </div>
           </div>
         </div>
