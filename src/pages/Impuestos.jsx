@@ -41,9 +41,10 @@ function taxStatus(deadline, hasPayment) {
   return { label: "PENDIENTE", color: "var(--text3)", bg: "var(--bg3)", border: "var(--border)", icon: "🕐" };
 }
 
-// ─── Datos históricos CASA FAMILIA - ORURO ─────────────────────
-// Fuente: "IVA IT RC-IVA.xlsx" — Oct 2024 a Jun 2026
-const HISTORICO_IVA_IT = [
+// ─── Datos históricos por proyecto ─────────────────────────────
+
+// CASA FAMILIA - ORURO (Fuente: "IVA IT RC-IVA.xlsx")
+const HISTORICO_CASA_FAMILIA = [
   { period:"2024-10", ivaReal:6195,    itReal:2058,    ivaPago:"2024-11-16", itPago:"2024-11-16" },
   { period:"2024-11", ivaReal:6248,    itReal:2058,    ivaPago:"2024-12-16", itPago:"2024-12-16" },
   { period:"2024-12", ivaReal:6674,    itReal:2238,    ivaPago:"2025-01-16", itPago:"2025-01-16" },
@@ -67,19 +68,57 @@ const HISTORICO_IVA_IT = [
   // Jun-2026: NO incluir — aún no pagado, vence 16/Jul/2026
 ];
 
-// RC-IVA trimestral — Q1-2025 sin pago (usuario llenará manual)
-const HISTORICO_RCIVA = [
-  { quarterKey:"2024-Q4", real:514,    pago:"2025-01-20", nota:"Q4-2024 (Oct-Nov-Dic) — después de compensación facturas" },
-  // Q1-2025: sin pago, usuario llenará manual
-  { quarterKey:"2025-Q2", real:640.76, pago:"2025-07-20", nota:"Q2-2025 (Abr-May-Jun) — después de compensación facturas" },
-  { quarterKey:"2025-Q3", real:546,    pago:"2025-10-20", nota:"Q3-2025 (Jul-Ago-Sep) — después de compensación facturas" },
-  { quarterKey:"2025-Q4", real:546,    pago:"2026-01-20", nota:"Q4-2025 (Oct-Nov-Dic) — después de compensación facturas" },
-  { quarterKey:"2026-Q1", real:546,    pago:"2026-04-20", nota:"Q1-2026 (Ene-Feb-Mar) — después de compensación facturas" },
-  { quarterKey:"2026-Q2", real:546,    pago:"2026-07-20", nota:"Q2-2026 (Abr-May-Jun) — después de compensación facturas" },
+const RCIVA_CASA_FAMILIA = [
+  { quarterKey:"2024-Q4", real:514,    pago:"2025-01-20", nota:"Q4-2024 — después de compensación facturas" },
+  { quarterKey:"2025-Q2", real:640.76, pago:"2025-07-20", nota:"Q2-2025 — después de compensación facturas" },
+  { quarterKey:"2025-Q3", real:546,    pago:"2025-10-20", nota:"Q3-2025 — después de compensación facturas" },
+  { quarterKey:"2025-Q4", real:546,    pago:"2026-01-20", nota:"Q4-2025 — después de compensación facturas" },
+  { quarterKey:"2026-Q1", real:546,    pago:"2026-04-20", nota:"Q1-2026 — después de compensación facturas" },
+  { quarterKey:"2026-Q2", real:546,    pago:"2026-07-20", nota:"Q2-2026 — después de compensación facturas" },
+];
+
+// OFICINA CENTRAL (Fuente: "rc iva oficina.xlsx")
+const HISTORICO_OFICINA_CENTRAL = [
+  { period:"2024-10", ivaReal:32136,     itReal:7575,     ivaPago:"2024-11-16", itPago:"2024-11-16" },
+  { period:"2024-11", ivaReal:32352,     itReal:7625,     ivaPago:"2024-12-16", itPago:"2024-12-16" },
+  { period:"2024-12", ivaReal:40776,     itReal:9570,     ivaPago:"2025-01-16", itPago:"2025-01-16" },
+  { period:"2025-01", ivaReal:36580,     itReal:8663,     ivaPago:"2025-02-16", itPago:"2025-02-16" },
+  { period:"2025-02", ivaReal:38285,     itReal:8993,     ivaPago:"2025-03-16", itPago:"2025-03-16" },
+  { period:"2025-03", ivaReal:38285,     itReal:8993,     ivaPago:"2025-04-16", itPago:"2025-04-16" },
+  { period:"2025-04", ivaReal:34821,     itReal:8178,     ivaPago:"2025-05-16", itPago:"2025-05-16" },
+  { period:"2025-05", ivaReal:37489.26,  itReal:8795.46,  ivaPago:"2025-06-16", itPago:"2025-06-16" },
+  { period:"2025-06", ivaReal:36183.8,   itReal:8493,     ivaPago:"2025-07-16", itPago:"2025-07-16" },
+  { period:"2025-07", ivaReal:32792.07,  itReal:7612,     ivaPago:"2025-08-18", itPago:"2025-08-18" },
+  { period:"2025-08", ivaReal:36474.88,  itReal:8570.09,  ivaPago:"2025-09-16", itPago:"2025-09-16" },
+  { period:"2025-09", ivaReal:29688.34,  itReal:7000,     ivaPago:"2025-10-16", itPago:"2025-10-16" },
+  { period:"2025-10", ivaReal:35642.55,  itReal:8369.75,  ivaPago:"2025-11-16", itPago:"2025-11-16" },
+  { period:"2025-11", ivaReal:27809.5,   itReal:6332.46,  ivaPago:"2025-11-17", itPago:"2025-11-17" },
+  { period:"2025-12", ivaReal:23167.39,  itReal:5410.23,  ivaPago:"2026-01-16", itPago:"2026-01-16" },
+  { period:"2026-01", ivaReal:27274.21,  itReal:6423.23,  ivaPago:"2026-02-18", itPago:"2026-02-18" },
+  { period:"2026-02", ivaReal:24587.54,  itReal:5787.61,  ivaPago:"2026-03-16", itPago:"2026-03-16" },
+  { period:"2026-03", ivaReal:19731.17,  itReal:5223.77,  ivaPago:"2026-04-16", itPago:"2026-04-16" },
+  { period:"2026-04", ivaReal:38447.27,  itReal:9411.45,  ivaPago:"2026-05-16", itPago:"2026-05-16" },
+  { period:"2026-05", ivaReal:33627.55,  itReal:8923.15,  ivaPago:"2026-06-16", itPago:"2026-06-16" },
+  // Jun-2026: NO incluir — aún no pagado
+];
+
+const RCIVA_OFICINA_CENTRAL = [
+  { quarterKey:"2024-Q4", real:35248,    pago:"2025-01-20", nota:"Q4-2024 — compensación con compra facturas" },
+  { quarterKey:"2025-Q1", real:46152,    pago:"2025-04-20", nota:"Q1-2025 — compensación con compra facturas" },
+  { quarterKey:"2025-Q2", real:30970.43, pago:"2025-07-20", nota:"Q2-2025 — compensación con compra facturas" },
+  { quarterKey:"2025-Q3", real:21963.06, pago:"2025-10-20", nota:"Q3-2025 — compensación con compra facturas" },
+  { quarterKey:"2025-Q4", real:4860,     pago:"2026-01-20", nota:"Q4-2025 — compensación con compra facturas" },
+  { quarterKey:"2026-Q1", real:0,        pago:"2026-04-20", nota:"Q1-2026 — compensado 100% con facturas" },
+  // Q2-2026: no pagado aún — vence 20/Jul/2026
 ];
 
 export default function Impuestos() {
-  const { config, periods, getTaxForecast, getQuarterTaxForecast, getTaxPayment, saveTaxPayment, deleteTaxPayment, isReadOnly } = useApp();
+  const { config, periods, getTaxForecast, getQuarterTaxForecast, getTaxPayment, saveTaxPayment, deleteTaxPayment, isReadOnly, project } = useApp();
+
+  // Seleccionar datos históricos según el proyecto activo
+  const esOficinaCentral = (project?.name || "").toLowerCase().includes("oficina");
+  const HISTORICO_IVA_IT = esOficinaCentral ? HISTORICO_OFICINA_CENTRAL : HISTORICO_CASA_FAMILIA;
+  const HISTORICO_RCIVA  = esOficinaCentral ? RCIVA_OFICINA_CENTRAL    : RCIVA_CASA_FAMILIA;
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
