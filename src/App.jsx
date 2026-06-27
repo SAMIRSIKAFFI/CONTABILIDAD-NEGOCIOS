@@ -47,7 +47,7 @@ const THEMES = [
 
 function MainApp({ project, onBack }) {
   const { profile, signOut, isSuperAdmin } = useAuth()
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState('mensual')
   const [theme, setThemeLocal] = useState(() => localStorage.getItem('cn_theme') || 'light')
 
   useEffect(() => {

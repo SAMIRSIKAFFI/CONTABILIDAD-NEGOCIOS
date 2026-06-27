@@ -12,7 +12,10 @@ function downloadCSV(content, filename) {
 
 export default function Mensual() {
   const { config, periods, getTotalesPorPeriodo, ingresos, gastos, costos } = useApp();
-  const [selectedPeriod, setSelectedPeriod] = useState(periods[0]?.key || "");
+  const now = new Date();
+  const currentKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const defaultKey = periods.find(p => p.key === currentKey)?.key || periods[0]?.key || "";
+  const [selectedPeriod, setSelectedPeriod] = useState(defaultKey);
 
   const period  = periods.find(p => p.key === selectedPeriod) || periods[0];
   const totals  = period ? getTotalesPorPeriodo(period.month, period.year) : {};
