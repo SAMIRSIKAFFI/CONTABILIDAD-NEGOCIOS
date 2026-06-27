@@ -41,29 +41,41 @@ function taxStatus(deadline, hasPayment) {
   return { label: "PENDIENTE", color: "var(--text3)", bg: "var(--bg3)", border: "var(--border)", icon: "🕐" };
 }
 
-// ─── Datos históricos para importación masiva ──────────────────
-// Datos extraídos directamente del archivo Excel "iva it.xlsx"
+// ─── Datos históricos CASA FAMILIA - ORURO ─────────────────────
+// Fuente: "IVA IT RC-IVA.xlsx" — Oct 2024 a Jun 2026
 const HISTORICO_IVA_IT = [
-  { period:"2024-10", ivaReal:32136,        itReal:7575 },
-  { period:"2024-11", ivaReal:32352,        itReal:7625 },
-  { period:"2024-12", ivaReal:40776,        itReal:9570 },
-  { period:"2025-01", ivaReal:36580,        itReal:8663 },
-  { period:"2025-02", ivaReal:38285,        itReal:8993 },
-  { period:"2025-03", ivaReal:38285,        itReal:8993 },
-  { period:"2025-04", ivaReal:34821,        itReal:8178 },
-  { period:"2025-05", ivaReal:37489.26,     itReal:8795.46 },
-  { period:"2025-06", ivaReal:36183.8,      itReal:8493 },
-  { period:"2025-07", ivaReal:32792.07,     itReal:7612 },
-  { period:"2025-08", ivaReal:36474.88,     itReal:8570.09 },
-  { period:"2025-09", ivaReal:29688.34,     itReal:7000 },
-  { period:"2025-10", ivaReal:35642.55,     itReal:8369.75 },
-  { period:"2025-11", ivaReal:27809.5,      itReal:6332.46 },
-  { period:"2025-12", ivaReal:23167.39,     itReal:5410.23 },
-  { period:"2026-01", ivaReal:27274.21,     itReal:6423.23 },
-  { period:"2026-02", ivaReal:24587.54,     itReal:5787.61 },
-  { period:"2026-03", ivaReal:19731.17,     itReal:5223.77 },
-  { period:"2026-04", ivaReal:38447.27,     itReal:9411.45 },
-  { period:"2026-05", ivaReal:33627.55,     itReal:8923.15 },
+  { period:"2024-10", ivaReal:6195,    itReal:2058,    ivaPago:"2024-11-16", itPago:"2024-11-16" },
+  { period:"2024-11", ivaReal:6248,    itReal:2058,    ivaPago:"2024-12-16", itPago:"2024-12-16" },
+  { period:"2024-12", ivaReal:6674,    itReal:2238,    ivaPago:"2025-01-16", itPago:"2025-01-16" },
+  { period:"2025-01", ivaReal:6772,    itReal:2238,    ivaPago:"2025-02-16", itPago:"2025-02-16" },
+  { period:"2025-02", ivaReal:6733,    itReal:2238,    ivaPago:"2025-03-16", itPago:"2025-03-16" },
+  { period:"2025-03", ivaReal:6204,    itReal:2071,    ivaPago:"2025-04-16", itPago:"2025-04-16" },
+  { period:"2025-04", ivaReal:6204,    itReal:2071,    ivaPago:"2025-05-16", itPago:"2025-05-16" },
+  { period:"2025-05", ivaReal:6181,    itReal:2071,    ivaPago:"2025-06-16", itPago:"2025-06-16" },
+  { period:"2025-06", ivaReal:6249,    itReal:2071,    ivaPago:"2025-07-16", itPago:"2025-07-16" },
+  { period:"2025-07", ivaReal:6196,    itReal:2071,    ivaPago:"2025-08-18", itPago:"2025-08-18" },
+  { period:"2025-08", ivaReal:6323,    itReal:2071,    ivaPago:"2025-09-16", itPago:"2025-09-16" },
+  { period:"2025-09", ivaReal:6249,    itReal:2071,    ivaPago:"2025-10-16", itPago:"2025-10-16" },
+  { period:"2025-10", ivaReal:6249,    itReal:2071,    ivaPago:"2025-11-16", itPago:"2025-11-16" },
+  { period:"2025-11", ivaReal:6277,    itReal:2071,    ivaPago:"2025-11-17", itPago:"2025-11-17" },
+  { period:"2025-12", ivaReal:6266,    itReal:2071,    ivaPago:"2026-01-16", itPago:"2026-01-16" },
+  { period:"2026-01", ivaReal:6216,    itReal:2071,    ivaPago:"2026-02-18", itPago:"2026-02-18" },
+  { period:"2026-02", ivaReal:5759,    itReal:1909,    ivaPago:"2026-03-16", itPago:"2026-03-16" },
+  { period:"2026-03", ivaReal:5201,    itReal:1742,    ivaPago:"2026-04-16", itPago:"2026-04-16" },
+  { period:"2026-04", ivaReal:6216,    itReal:2071,    ivaPago:"2026-05-16", itPago:"2026-05-16" },
+  { period:"2026-05", ivaReal:6747,    itReal:2246,    ivaPago:"2026-06-16", itPago:"2026-06-16" },
+  { period:"2026-06", ivaReal:6749,    itReal:2246,    ivaPago:"2026-07-16", itPago:"2026-07-16" },
+];
+
+// RC-IVA trimestral — Q1-2025 sin pago (usuario llenará manual)
+const HISTORICO_RCIVA = [
+  { quarterKey:"2024-Q4", real:514,    pago:"2025-01-20", nota:"Q4-2024 (Oct-Nov-Dic) — después de compensación facturas" },
+  // Q1-2025: sin pago, usuario llenará manual
+  { quarterKey:"2025-Q2", real:640.76, pago:"2025-07-16", nota:"Q2-2025 (Abr-May-Jun) — después de compensación facturas" },
+  { quarterKey:"2025-Q3", real:546,    pago:"2025-10-16", nota:"Q3-2025 (Jul-Ago-Sep) — después de compensación facturas" },
+  { quarterKey:"2025-Q4", real:546,    pago:"2026-01-16", nota:"Q4-2025 (Oct-Nov-Dic) — después de compensación facturas" },
+  { quarterKey:"2026-Q1", real:546,    pago:"2026-04-16", nota:"Q1-2026 (Ene-Feb-Mar) — después de compensación facturas" },
+  { quarterKey:"2026-Q2", real:546,    pago:"2026-07-16", nota:"Q2-2026 (Abr-May-Jun) — después de compensación facturas" },
 ];
 
 export default function Impuestos() {
@@ -102,15 +114,17 @@ export default function Impuestos() {
 
   const handleImportarHistorico = async (forzar = false) => {
     setImporting(true);
+    // IVA e IT mensuales
     for (const h of HISTORICO_IVA_IT) {
-      const [y, m] = h.period.split("-").map(Number);
-      const pm = m === 12 ? 1 : m + 1;
-      const py = m === 12 ? y + 1 : y;
-      const fechaPago = `${py}-${String(pm).padStart(2,"0")}-16`;
       if (forzar || !getTaxPayment("iva", h.period))
-        await saveTaxPayment("iva", h.period, h.ivaReal, fechaPago, "Histórico Excel iva it.xlsx");
+        await saveTaxPayment("iva", h.period, h.ivaReal, h.ivaPago, "Histórico IVA IT RC-IVA.xlsx");
       if (forzar || !getTaxPayment("it", h.period))
-        await saveTaxPayment("it",  h.period, h.itReal,  fechaPago, "Histórico Excel iva it.xlsx");
+        await saveTaxPayment("it",  h.period, h.itReal,  h.itPago,  "Histórico IVA IT RC-IVA.xlsx");
+    }
+    // RC-IVA trimestral
+    for (const r of HISTORICO_RCIVA) {
+      if (forzar || !getTaxPayment("rciva", r.quarterKey))
+        await saveTaxPayment("rciva", r.quarterKey, r.real, r.pago, r.nota);
     }
     setImporting(false);
     setImportDone(true);
@@ -147,8 +161,9 @@ export default function Impuestos() {
             </div>
             <div className="modal-body">
               <div style={{ marginBottom:14, padding:"10px 14px", background:"rgba(79,142,247,0.08)", borderRadius:8, fontSize:12, color:"var(--text2)" }}>
-                Se cargarán <strong>{pendientes.length} períodos</strong> (Oct 2024 → May 2026) con IVA real e IT real.
-                {yaExisten.length > 0 && <span style={{ color:"var(--accent-green)" }}> {yaExisten.length} ya estaban cargados y se omitirán.</span>}
+                <div>📋 <strong>{pendientes.length} períodos IVA/IT</strong> (Oct 2024 → Jun 2026) + <strong>{HISTORICO_RCIVA.length} trimestres RC-IVA</strong></div>
+                {yaExisten.length > 0 && <div style={{ color:"var(--accent-green)", marginTop:4 }}>✅ {yaExisten.length} períodos IVA/IT ya cargados — se omitirán (usa "Reimportar" para sobreescribir)</div>}
+                <div style={{ marginTop:6, color:"#a87c0a" }}>⚠️ RC-IVA Q1-2025 no incluido — carga manual requerida</div>
               </div>
               <div style={{ maxHeight:380, overflowY:"auto" }}>
                 <table style={{ width:"100%", fontSize:12, borderCollapse:"collapse" }}>
@@ -196,6 +211,39 @@ export default function Impuestos() {
                       <td />
                     </tr>
                   </tfoot>
+                </table>
+
+                {/* RC-IVA trimestral */}
+                <div style={{ marginTop:16, fontWeight:700, fontSize:12, color:"#a78bfa", marginBottom:8 }}>
+                  📦 RC-IVA Trimestral ({HISTORICO_RCIVA.length} trimestres)
+                </div>
+                <table style={{ width:"100%", fontSize:12, borderCollapse:"collapse" }}>
+                  <thead>
+                    <tr style={{ background:"var(--bg3)" }}>
+                      <th style={{ padding:"6px 10px", textAlign:"left", fontWeight:600, color:"var(--text3)" }}>Trimestre</th>
+                      <th style={{ padding:"6px 10px", textAlign:"right", fontWeight:600, color:"var(--text3)" }}>Real Pagado</th>
+                      <th style={{ padding:"6px 10px", textAlign:"center", fontWeight:600, color:"var(--text3)" }}>Fecha Pago</th>
+                      <th style={{ padding:"6px 10px", textAlign:"center", fontWeight:600, color:"var(--text3)" }}>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {HISTORICO_RCIVA.map((r, i) => {
+                      const yaExisteRc = !!getTaxPayment("rciva", r.quarterKey);
+                      return (
+                        <tr key={r.quarterKey} style={{ borderTop:"1px solid var(--border)", background:i%2===0?"transparent":"var(--bg3)" }}>
+                          <td style={{ padding:"6px 10px", fontWeight:600 }}>{r.quarterKey}</td>
+                          <td style={{ padding:"6px 10px", textAlign:"right", color:"#a78bfa", fontVariantNumeric:"tabular-nums" }}>{r.real.toLocaleString("es-BO",{minimumFractionDigits:2})}</td>
+                          <td style={{ padding:"6px 10px", textAlign:"center", color:"var(--text3)" }}>{r.pago}</td>
+                          <td style={{ padding:"6px 10px", textAlign:"center" }}>
+                            {yaExisteRc
+                              ? <span style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(45,212,160,0.12)", color:"var(--accent-green)", fontWeight:700 }}>✅ Ya existe</span>
+                              : <span style={{ fontSize:10, padding:"2px 8px", borderRadius:20, background:"rgba(167,139,250,0.12)", color:"#a78bfa", fontWeight:700 }}>📥 Pendiente</span>
+                            }
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
                 </table>
               </div>
             </div>
