@@ -187,9 +187,12 @@ export function AppProvider({ children, project }) {
   // Repairs month/year fields for ALL existing transactions by recalculating from 'fecha'.
   // Use this when records were imported with mismatched month/year (e.g. via faulty backup).
   const repairMonthYear = useCallback(async () => {
-    if (isReadOnly) return { fixed: 0, error: true }
+    if (isReadOnly) return { fixed: 0, error: true, message: 'Sin permisos de escritura' }
     let fixedCount = 0
-    const repairList = async (list, setter, type) => {
+    let errorCount = 0
+    let lastError = null
+
+    const repairList = async (list, setter) => {
       const updates = []
       const fixed = list.map(item => {
         const date = new Date(item.fecha)
@@ -203,14 +206,25 @@ export function AppProvider({ children, project }) {
         return item
       })
       for (const u of updates) {
-        await supabase.from('transactions').update({ month: u.month, year: u.year }).eq('id', u.id)
+        const { error } = await supabase.from('transactions').update({ month: u.month, year: u.year }).eq('id', u.id)
+        if (error) {
+          console.error('repairMonthYear update error:', error)
+          errorCount++
+          lastError = error
+        } else {
+          fixedCount++
+        }
       }
       if (updates.length > 0) setter(fixed)
-      fixedCount += updates.length
     }
-    await repairList(ingresos, setIngresos, 'ingreso')
-    await repairList(gastos, setGastos, 'gasto')
-    await repairList(costos, setCostos, 'costo')
+
+    await repairList(ingresos, setIngresos)
+    await repairList(gastos, setGastos)
+    await repairList(costos, setCostos)
+
+    if (errorCount > 0) {
+      return { fixed: fixedCount, error: true, message: lastError?.message || 'Error desconocido al actualizar', errorCount }
+    }
     return { fixed: fixedCount, error: false }
   }, [ingresos, gastos, costos, isReadOnly])
 

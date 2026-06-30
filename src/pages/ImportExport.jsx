@@ -4,6 +4,7 @@ import { useApp } from "../context/AppContext";
 export default function ImportExport() {
   const { exportData, importFromBackup, importData, clearAllData, repairMonthYear, ingresos, gastos, costos, isReadOnly } = useApp();
   const [msg, setMsg] = useState(null);
+  const [repairing, setRepairing] = useState(false);
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvType, setCsvType] = useState("ingresos");
   const [csvMapping, setCsvMapping] = useState({});
@@ -268,14 +269,24 @@ export default function ImportExport() {
           <p style={{ color:"var(--text2)", fontSize:13, marginBottom:14, lineHeight:1.6 }}>
             Si un registro aparece en el mes equivocado dentro de los resúmenes (Mensual, Anual, Flujo) pero su fecha es correcta en la tabla de Ingresos/Gastos, usa esta herramienta para recalcular automáticamente el mes y año de todos los registros según su fecha real.
           </p>
-          <button className="btn btn-ghost"
+          <button className="btn btn-ghost" disabled={repairing}
             onClick={async () => {
-              const result = await repairMonthYear();
-              result.error
-                ? showMsg("❌ Error al reparar registros", false)
-                : showMsg(result.fixed > 0 ? `✅ ${result.fixed} registros corregidos` : "✅ Todo está correcto, no se encontraron registros con mes/año desincronizado");
+              setRepairing(true);
+              showMsg("⏳ Reparando registros, espera un momento...");
+              try {
+                const result = await repairMonthYear();
+                if (result.error) {
+                  showMsg(`❌ Error: ${result.message || "No se pudo completar"}${result.errorCount ? ` (${result.errorCount} fallos)` : ""}`, false);
+                } else {
+                  showMsg(result.fixed > 0 ? `✅ ${result.fixed} registros corregidos` : "✅ Todo está correcto, no se encontraron registros con mes/año desincronizado");
+                }
+              } catch (err) {
+                showMsg(`❌ Error inesperado: ${err.message}`, false);
+              } finally {
+                setRepairing(false);
+              }
             }}>
-            🔧 Reparar Mes/Año de todos los registros
+            {repairing ? "⏳ Reparando..." : "🔧 Reparar Mes/Año de todos los registros"}
           </button>
         </div>
       )}
