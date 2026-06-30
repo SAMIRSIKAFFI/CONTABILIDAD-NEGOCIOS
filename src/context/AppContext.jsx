@@ -165,7 +165,12 @@ export function AppProvider({ children, project }) {
     try {
       const data = JSON.parse(jsonData)
       if (data.config) await saveConfig(data.config)
-      const proc = (arr, type) => arr.map(item => ({ ...item, id: generateId(), project_id: projectId, type }))
+      const proc = (arr, type) => arr.map(item => {
+        const date = new Date(item.fecha)
+        const correctMonth = isNaN(date) ? (item.month || 1) : date.getMonth() + 1
+        const correctYear = isNaN(date) ? (item.year || new Date().getFullYear()) : date.getFullYear()
+        return { ...item, id: generateId(), project_id: projectId, type, month: correctMonth, year: correctYear }
+      })
       if (data.ingresos?.length) { const r = proc(data.ingresos,'ingreso'); await supabase.from('transactions').insert(r); setIngresos(r) }
       if (data.gastos?.length) { const r = proc(data.gastos,'gasto'); await supabase.from('transactions').insert(r); setGastos(r) }
       if (data.costos?.length) { const r = proc(data.costos,'costo'); await supabase.from('transactions').insert(r); setCostos(r) }
@@ -178,6 +183,36 @@ export function AppProvider({ children, project }) {
     await supabase.from('transactions').delete().eq('project_id', projectId)
     setIngresos([]); setGastos([]); setCostos([])
   }, [projectId])
+
+  // Repairs month/year fields for ALL existing transactions by recalculating from 'fecha'.
+  // Use this when records were imported with mismatched month/year (e.g. via faulty backup).
+  const repairMonthYear = useCallback(async () => {
+    if (isReadOnly) return { fixed: 0, error: true }
+    let fixedCount = 0
+    const repairList = async (list, setter, type) => {
+      const updates = []
+      const fixed = list.map(item => {
+        const date = new Date(item.fecha)
+        if (isNaN(date)) return item
+        const correctMonth = date.getMonth() + 1
+        const correctYear = date.getFullYear()
+        if (item.month !== correctMonth || item.year !== correctYear) {
+          updates.push({ id: item.id, month: correctMonth, year: correctYear })
+          return { ...item, month: correctMonth, year: correctYear }
+        }
+        return item
+      })
+      for (const u of updates) {
+        await supabase.from('transactions').update({ month: u.month, year: u.year }).eq('id', u.id)
+      }
+      if (updates.length > 0) setter(fixed)
+      fixedCount += updates.length
+    }
+    await repairList(ingresos, setIngresos, 'ingreso')
+    await repairList(gastos, setGastos, 'gasto')
+    await repairList(costos, setCostos, 'costo')
+    return { fixed: fixedCount, error: false }
+  }, [ingresos, gastos, costos, isReadOnly])
 
   // ============================================================
   // RECURRING TEMPLATES (plantillas de gastos/ingresos/costos recurrentes)
@@ -304,7 +339,7 @@ export function AppProvider({ children, project }) {
       gastos, addGasto, deleteGasto, updateGasto,
       costos, addCosto, deleteCosto, updateCosto,
       presupuesto, updatePresupuesto,
-      importData, exportData, importFromBackup, clearAllData,
+      importData, exportData, importFromBackup, clearAllData, repairMonthYear,
       templates, addTemplate, deleteTemplate, getPendingTemplates,
       taxPayments, saveTaxPayment, getTaxPayment, getTaxForecast, getQuarterTaxForecast,
       getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo, getTotalesPorPeriodo,
