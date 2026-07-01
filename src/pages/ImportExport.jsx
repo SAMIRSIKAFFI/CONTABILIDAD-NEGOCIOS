@@ -2,8 +2,9 @@ import { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
 
 export default function ImportExport() {
-  const { exportData, importFromBackup, importData, clearAllData, ingresos, gastos, costos, isReadOnly } = useApp();
+  const { exportData, importFromBackup, importData, clearAllData, repairMonthYear, ingresos, gastos, costos, isReadOnly } = useApp();
   const [msg, setMsg] = useState(null);
+  const [repairing, setRepairing] = useState(false);
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvType, setCsvType] = useState("ingresos");
   const [csvMapping, setCsvMapping] = useState({});
@@ -261,6 +262,32 @@ export default function ImportExport() {
           </div>
         </div>
       </div>
+
+      {!isReadOnly && (
+        <div className="card" style={{ marginTop:20, borderColor:"rgba(247,86,106,0.3)" }}>
+          <div className="section-title" style={{ color:"var(--accent)" }}>🔧 Mantenimiento</div>
+          <p style={{ color:"var(--text2)", fontSize:13, marginBottom:14, lineHeight:1.6 }}>
+            Si un registro aparece en el mes equivocado en los resúmenes (Mensual, Anual, Flujo) pero su fecha es correcta en Ingresos/Gastos, usa esta herramienta para recalcular mes y año de todos los registros.
+          </p>
+          <button className="btn btn-ghost" disabled={repairing}
+            onClick={async () => {
+              setRepairing(true);
+              showMsg("⏳ Reparando registros...");
+              try {
+                const result = await repairMonthYear();
+                result.error
+                  ? showMsg(`❌ Error: ${result.errorCount} registros fallaron`, false)
+                  : showMsg(result.fixed > 0 ? `✅ ${result.fixed} registros corregidos` : "✅ Todo correcto, no hay registros con mes/año desincronizado");
+              } catch(err) {
+                showMsg(`❌ Error inesperado: ${err.message}`, false);
+              } finally {
+                setRepairing(false);
+              }
+            }}>
+            {repairing ? "⏳ Reparando..." : "🔧 Reparar Mes/Año de todos los registros"}
+          </button>
+        </div>
+      )}
 
       {!isReadOnly && (
         <div className="card" style={{ marginTop:20, borderColor:"rgba(247,86,106,0.3)" }}>

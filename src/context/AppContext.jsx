@@ -171,7 +171,13 @@ export function AppProvider({ children, project }) {
     try {
       const data = JSON.parse(jsonData)
       if (data.config) await saveConfig(data.config)
-      const proc = (arr, type) => arr.map(item => ({ ...item, id: generateId(), project_id: projectId, type }))
+      // Always recalculate month/year from fecha to avoid mismatched data
+      const proc = (arr, type) => arr.map(item => {
+        const date = new Date(item.fecha)
+        const correctMonth = isNaN(date) ? (item.month || 1) : date.getMonth() + 1
+        const correctYear = isNaN(date) ? (item.year || new Date().getFullYear()) : date.getFullYear()
+        return { ...item, id: generateId(), project_id: projectId, type, month: correctMonth, year: correctYear }
+      })
       if (data.ingresos?.length) { const r = proc(data.ingresos,'ingreso'); await supabase.from('transactions').insert(r); setIngresos(r) }
       if (data.gastos?.length) { const r = proc(data.gastos,'gasto'); await supabase.from('transactions').insert(r); setGastos(r) }
       if (data.costos?.length) { const r = proc(data.costos,'costo'); await supabase.from('transactions').insert(r); setCostos(r) }
@@ -179,6 +185,36 @@ export function AppProvider({ children, project }) {
       return true
     } catch { toast.error('Error al restaurar el backup'); return false }
   }, [projectId])
+
+  // Repairs month/year for ALL existing transactions by recalculating from 'fecha'
+  const repairMonthYear = useCallback(async () => {
+    let fixedCount = 0
+    let errorCount = 0
+    const repairList = async (list, setter) => {
+      const updates = []
+      const fixed = list.map(item => {
+        const date = new Date(item.fecha)
+        if (isNaN(date)) return item
+        const correctMonth = date.getMonth() + 1
+        const correctYear = date.getFullYear()
+        if (item.month !== correctMonth || item.year !== correctYear) {
+          updates.push({ id: item.id, month: correctMonth, year: correctYear })
+          return { ...item, month: correctMonth, year: correctYear }
+        }
+        return item
+      })
+      for (const u of updates) {
+        const { error } = await supabase.from('transactions').update({ month: u.month, year: u.year }).eq('id', u.id)
+        if (error) { console.error('repairMonthYear error:', error); errorCount++ }
+        else fixedCount++
+      }
+      if (updates.length > 0) setter(fixed)
+    }
+    await repairList(ingresos, setIngresos)
+    await repairList(gastos, setGastos)
+    await repairList(costos, setCostos)
+    return { fixed: fixedCount, error: errorCount > 0, errorCount }
+  }, [ingresos, gastos, costos])
 
   const clearAllData = useCallback(async () => {
     if (isReadOnly) return
@@ -293,7 +329,7 @@ export function AppProvider({ children, project }) {
       gastos, addGasto, deleteGasto, updateGasto,
       costos, addCosto, deleteCosto, updateCosto,
       presupuesto, updatePresupuesto,
-      importData, exportData, importFromBackup, clearAllData,
+      importData, exportData, importFromBackup, clearAllData, repairMonthYear,
       templates, addTemplate, updateTemplate, deleteTemplate, getPendingTemplates,
       taxPayments, saveTaxPayment, deleteTaxPayment, getTaxPayment, getTaxForecast, getQuarterTaxForecast,
       getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo, getTotalesPorPeriodo,
