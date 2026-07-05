@@ -83,18 +83,24 @@ export default function Banco() {
   // ── Movimientos de la cuenta seleccionada ────────────────────
   const movimientos = useMemo(() => {
     if (!selectedCuenta) return [];
+    const cid     = selectedCuenta.id;
     const methods = new Set(selectedCuenta.metodosVinculados || []);
     const cutoff  = selectedCuenta.fechaSaldoInicial || "2000-01-01";
+    // Match by cuentaBancariaId (new) OR metodoPago (legacy fallback)
+    const match = x => x.fecha >= cutoff && (
+      x.cuentaBancariaId === cid ||
+      (!x.cuentaBancariaId && methods.has(x.metodoPago))
+    );
     const all = [
-      ...ingresos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).map(x => ({
+      ...ingresos.filter(match).map(x => ({
         id: x.id, fecha: x.fecha, tipo: "ingreso", categoria: x.categoria,
         descripcion: x.descripcion || "", monto: x.ingresoTotal || 0,
       })),
-      ...gastos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).map(x => ({
+      ...gastos.filter(match).map(x => ({
         id: x.id, fecha: x.fecha, tipo: "gasto", categoria: x.categoria,
         descripcion: x.descripcion || "", monto: -(x.gastoTotal || 0),
       })),
-      ...costos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).map(x => ({
+      ...costos.filter(match).map(x => ({
         id: x.id, fecha: x.fecha, tipo: "costo", categoria: x.categoria,
         descripcion: x.descripcion || "", monto: -(x.costoTotal || 0),
       })),
@@ -112,12 +118,17 @@ export default function Banco() {
   // ── Saldo total de TODAS las cuentas ─────────────────────────
   const totalAllAccounts = useMemo(() => {
     return cuentas.reduce((total, cuenta) => {
+      const cid     = cuenta.id;
       const methods = new Set(cuenta.metodosVinculados || []);
       const cutoff  = cuenta.fechaSaldoInicial || "2000-01-01";
+      const match = x => x.fecha >= cutoff && (
+        x.cuentaBancariaId === cid ||
+        (!x.cuentaBancariaId && methods.has(x.metodoPago))
+      );
       let bal = cuenta.saldoInicial || 0;
-      ingresos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).forEach(x => bal += (x.ingresoTotal || 0));
-      gastos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).forEach(x => bal -= (x.gastoTotal || 0));
-      costos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).forEach(x => bal -= (x.costoTotal || 0));
+      ingresos.filter(match).forEach(x => bal += (x.ingresoTotal || 0));
+      gastos.filter(match).forEach(x => bal -= (x.gastoTotal || 0));
+      costos.filter(match).forEach(x => bal -= (x.costoTotal || 0));
       return total + bal;
     }, 0);
   }, [cuentas, ingresos, gastos, costos]);
