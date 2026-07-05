@@ -17,8 +17,12 @@ export default function Costos() {
   const { filtered, search, setSearch, filterCat, setFilterCat, filterMes, setFilterMes, filterAno, setFilterAno, limpiar, hayFiltro } = useTableSearch(sorted);
   const { pageItems, page, totalPages, goTo, start, total } = usePagination(filtered, PAGE_SIZE);
 
-  const cuentas = config.cuentasBancarias || [];
-  const cuentaOpts = cuentas.map(c => `${c.banco} ···· ${String(c.numeroCuenta||"").slice(-4)} | ${c.id}`);
+  const cuentasBancarias = config.cuentasBancarias?.length > 0
+    ? config.cuentasBancarias
+    : config.cuentaBancaria?.activa ? [config.cuentaBancaria] : [];
+  const cuentaOpts = cuentasBancarias.map(c =>
+    `${c.banco || "Banco"} ···· ${String(c.numeroCuenta || c.id || "").slice(-4)} | ${c.id}`
+  );
 
   const fields = [
     { key: "fecha",            label: "Fecha",             type: "date",    required: true },
