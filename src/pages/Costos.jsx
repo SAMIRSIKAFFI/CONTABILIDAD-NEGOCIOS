@@ -17,19 +17,24 @@ export default function Costos() {
   const { filtered, search, setSearch, filterCat, setFilterCat, filterMes, setFilterMes, filterAno, setFilterAno, limpiar, hayFiltro } = useTableSearch(sorted);
   const { pageItems, page, totalPages, goTo, start, total } = usePagination(filtered, PAGE_SIZE);
 
-  const cuentasBancarias = config.cuentasBancarias?.length > 0
-    ? config.cuentasBancarias
-    : config.cuentaBancaria?.activa ? [config.cuentaBancaria] : [];
-  const cuentaOpts = cuentasBancarias.map(c =>
-    `${c.banco || "Banco"} ···· ${String(c.numeroCuenta || c.id || "").slice(-4)} | ${c.id}`
-  );
+  // Detectar cuentas de cualquier estructura posible en config
+  const _rawCuentas = [];
+  if (Array.isArray(config.cuentasBancarias)) _rawCuentas.push(...config.cuentasBancarias);
+  if (config.cuentaBancaria && typeof config.cuentaBancaria === 'object') {
+    const cb = config.cuentaBancaria;
+    if (cb.banco || cb.id || cb.numeroCuenta) _rawCuentas.push(cb);
+  }
+  const _allCuentas = _rawCuentas.filter(c => c && (c.id || c.banco));
+  const cuentaOpts = _allCuentas.length > 0
+    ? _allCuentas.map(c => `${c.banco || "Banco"} ···· ${String(c.numeroCuenta || c.id || "").slice(-4)} | ${c.id || c.banco}`)
+    : ["Sin cuentas configuradas | __none__"];
 
   const fields = [
     { key: "fecha",            label: "Fecha",             type: "date",    required: true },
     { key: "categoria",        label: "Categoría",         type: "select",  options: config.categoriasCostos, required: true },
     { key: "descripcion",      label: "Descripción",       type: "text" },
     { key: "metodoPago",       label: "Método de Pago",    type: "select",  options: config.metodosPago },
-    { key: "cuentaBancariaId", label: "💳 Cuenta Bancaria",type: "select",  options: cuentaOpts, required: true },
+    { key: "cuentaBancariaId", label: `💳 Cuenta Bancaria${_allCuentas.length === 0 ? " (⚠️ Configura cuentas en Banco)" : ""}`, type: "select", options: cuentaOpts, required: true },
     { key: "costoTotal",       label: "Costo Total",       type: "number",  required: true, step: "0.01", min: "0" },
     { key: "impuesto",         label: "Impuesto (%)",      type: "number",  step: "0.01", min: "0" },
     { key: "notas",            label: "Notas",             type: "textarea" },
