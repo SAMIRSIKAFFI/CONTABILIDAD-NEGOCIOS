@@ -4,6 +4,9 @@ import { AppProvider } from './context/AppContext'
 import LoginPage from './auth/LoginPage'
 import ProjectSelector from './auth/ProjectSelector'
 import AdminPanel from './admin/AdminPanel'
+import Dashboard from './pages/Dashboard'
+import Banco from './pages/Banco'
+import PrevisionesPage from './pages/Previsiones'
 import Configuracion from './pages/Configuracion'
 import Ingresos from './pages/Ingresos'
 import Gastos from './pages/Gastos'
@@ -19,29 +22,32 @@ import ImportExport from './pages/ImportExport'
 import './index.css'
 
 const TABS = [
-  { id: 'configuracion', label: '⚙️ Configuración' },
-  { id: 'ingresos', label: '💰 Ingresos' },
-  { id: 'gastos', label: '💸 Gastos' },
-  { id: 'costos', label: '🏭 Costos' },
-  { id: 'presupuesto', label: '📋 Presupuesto' },
-  { id: 'diario', label: '📅 Diario' },
-  { id: 'mensual', label: '📆 Mensual' },
-  { id: 'anual', label: '📊 Anual' },
-  { id: 'flujo', label: '🌊 Flujo' },
-  { id: 'balance', label: '⚖️ Balance' },
-  { id: 'impuestos', label: '🧾 Impuestos' },
-  { id: 'importexport', label: '📤 Importar/Exportar' },
+  { id: 'dashboard',    label: '📊 Monitor' },
+  { id: 'banco',        label: '🏦 Banco' },
+  { id: 'previsiones',  label: '📋 Previsiones' },
+  { id: 'ingresos',     label: '💰 Ingresos' },
+  { id: 'gastos',       label: '💸 Gastos' },
+  { id: 'costos',       label: '🏭 Costos' },
+  { id: 'presupuesto',  label: '📋 Presupuesto' },
+  { id: 'diario',       label: '📅 Diario' },
+  { id: 'mensual',      label: '📆 Mensual' },
+  { id: 'anual',        label: '📊 Anual' },
+  { id: 'flujo',        label: '🌊 Flujo' },
+  { id: 'balance',      label: '⚖️ Balance' },
+  { id: 'impuestos',    label: '🧾 Impuestos' },
+  { id: 'configuracion',label: '⚙️ Config' },
+  { id: 'importexport', label: '📤 Imp/Exp' },
 ]
 
 const THEMES = [
   { id: 'light', label: '☀️ Claro' },
-  { id: 'soft', label: '🌿 Suave' },
-  { id: 'dark', label: '🌙 Oscuro' },
+  { id: 'soft',  label: '🌿 Suave' },
+  { id: 'dark',  label: '🌙 Oscuro' },
 ]
 
 function MainApp({ project, onBack }) {
   const { profile, signOut, isSuperAdmin } = useAuth()
-  const [activeTab, setActiveTab] = useState('ingresos')
+  const [activeTab, setActiveTab] = useState('mensual')
   const [theme, setThemeLocal] = useState(() => localStorage.getItem('cn_theme') || 'light')
 
   useEffect(() => {
@@ -52,19 +58,22 @@ function MainApp({ project, onBack }) {
 
   const renderPage = () => {
     switch (activeTab) {
-      case 'configuracion': return <Configuracion />
-      case 'ingresos': return <Ingresos />
-      case 'gastos': return <Gastos />
-      case 'costos': return <Costos />
-      case 'presupuesto': return <Presupuesto />
-      case 'diario': return <Diario />
-      case 'mensual': return <Mensual />
-      case 'anual': return <Anual />
-      case 'flujo': return <Flujo />
-      case 'balance': return <Balance />
-      case 'impuestos': return <Impuestos />
+      case 'dashboard':    return <Dashboard />
+      case 'banco':        return <Banco />
+      case 'previsiones':  return <PrevisionesPage />
+      case 'configuracion':return <Configuracion />
+      case 'ingresos':     return <Ingresos />
+      case 'gastos':       return <Gastos />
+      case 'costos':       return <Costos />
+      case 'presupuesto':  return <Presupuesto />
+      case 'diario':       return <Diario />
+      case 'mensual':      return <Mensual />
+      case 'anual':        return <Anual />
+      case 'flujo':        return <Flujo />
+      case 'balance':      return <Balance />
+      case 'impuestos':    return <Impuestos />
       case 'importexport': return <ImportExport />
-      default: return <Ingresos />
+      default:             return <Dashboard />
     }
   }
 
@@ -95,13 +104,11 @@ function MainApp({ project, onBack }) {
               <div>{profile?.full_name || profile?.email}</div>
               <div style={{ textTransform: 'capitalize', color: 'var(--text3)', fontSize: 11 }}>{profile?.role}</div>
             </div>
-
             {isSuperAdmin && (
               <button className="theme-btn" onClick={() => onBack('admin')} title="Panel de Administración">
                 ⚙️ Admin
               </button>
             )}
-
             <div className="theme-switcher">
               {THEMES.map(t => (
                 <button key={t.id} className={`theme-btn ${theme === t.id ? 'active' : ''}`}
@@ -110,7 +117,6 @@ function MainApp({ project, onBack }) {
                 </button>
               ))}
             </div>
-
             <button className="theme-btn" onClick={signOut}>Salir</button>
           </div>
         </header>
