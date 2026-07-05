@@ -95,14 +95,17 @@ export default function Banco() {
       ...ingresos.filter(match).map(x => ({
         id: x.id, fecha: x.fecha, tipo: "ingreso", categoria: x.categoria,
         descripcion: x.descripcion || "", monto: x.ingresoTotal || 0,
+        cuentaBancariaId: x.cuentaBancariaId || "", metodoPago: x.metodoPago || "",
       })),
       ...gastos.filter(match).map(x => ({
         id: x.id, fecha: x.fecha, tipo: "gasto", categoria: x.categoria,
         descripcion: x.descripcion || "", monto: -(x.gastoTotal || 0),
+        cuentaBancariaId: x.cuentaBancariaId || "", metodoPago: x.metodoPago || "",
       })),
       ...costos.filter(match).map(x => ({
         id: x.id, fecha: x.fecha, tipo: "costo", categoria: x.categoria,
         descripcion: x.descripcion || "", monto: -(x.costoTotal || 0),
+        cuentaBancariaId: x.cuentaBancariaId || "", metodoPago: x.metodoPago || "",
       })),
     ].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.localeCompare(b.id));
 
@@ -317,13 +320,14 @@ export default function Banco() {
                     <thead>
                       <tr>
                         <th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th>
+                        <th>Cuenta</th>
                         <th style={{ textAlign:"right" }}>Movimiento</th>
                         <th style={{ textAlign:"right" }}>Saldo</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.length === 0 ? (
-                        <tr><td colSpan={6}><div className="empty-state"><div className="icon">🏦</div><p>Sin movimientos</p></div></td></tr>
+                        <tr><td colSpan={7}><div className="empty-state"><div className="icon">🏦</div><p>Sin movimientos</p></div></td></tr>
                       ) : filtered.map(m => (
                         <tr key={m.id}>
                           <td style={{ whiteSpace:"nowrap" }}>{fmtDate(m.fecha)}</td>
@@ -332,6 +336,12 @@ export default function Banco() {
                           </span></td>
                           <td style={{ fontSize:12 }}>{m.categoria}</td>
                           <td style={{ fontSize:12, maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.descripcion}</td>
+                          <td style={{ fontSize:11, color:"var(--text3)", whiteSpace:"nowrap" }}>
+                            {(() => {
+                              const c = cuentas.find(c => c.id === m.cuentaBancariaId);
+                              return c ? `···· ${String(c.numeroCuenta||"").slice(-4)}` : m.metodoPago || "—";
+                            })()}
+                          </td>
                           <td style={{ textAlign:"right", fontWeight:700, color:m.monto>=0?"var(--accent-green)":"var(--accent-red)", whiteSpace:"nowrap" }}>
                             {m.monto>=0?"+":""}{fmt(m.monto, cur)}
                           </td>

@@ -100,6 +100,7 @@ export default function Ingresos() {
               <SortableTh label="Categoría"     sortKey="categoria"    currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} />
               <th>Descripción</th>
               <th>Método Pago</th>
+              <th>Cuenta</th>
               <SortableTh label="Ingreso Total" sortKey="ingresoTotal" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} align="right" />
               <SortableTh label="Impuesto %"    sortKey="impuesto"     currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} align="right" />
               <SortableTh label="Valor Imp."    sortKey="valorImpuesto" currentKey={sortKey} currentDir={sortDir} onSort={toggleSort} align="right" />
@@ -118,6 +119,13 @@ export default function Ingresos() {
                 <td><span className="badge badge-green">{item.categoria}</span></td>
                 <td>{item.descripcion}</td>
                 <td>{item.metodoPago}</td>
+                <td style={{ fontSize:11, color:"var(--text3)" }}>
+                  {(() => {
+                    const cuentas = config.cuentasBancarias || [];
+                    const c = cuentas.find(c => c.id === item.cuentaBancariaId);
+                    return c ? `···· ${String(c.numeroCuenta||"").slice(-4)}` : item.cuentaBancariaId ? "···" : "—";
+                  })()}
+                </td>
                 <td className="num-neutral num-col">{fmt(item.ingresoTotal, config.currency)}</td>
                 <td className="num-col" style={{ textAlign: "right" }}>{item.impuesto || 0}%</td>
                 <td className="num-negative num-col">-{fmt(item.valorImpuesto, config.currency)}</td>
