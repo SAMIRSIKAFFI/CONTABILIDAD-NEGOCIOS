@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/AuthContext'
 
@@ -20,32 +21,35 @@ function buildPeriods(startMonth, startYear, count = 12) {
 function loadLocal(key, def) { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : def } catch { return def } }
 function saveLocal(key, val) { try { localStorage.setItem(key, JSON.stringify(val)) } catch {} }
 
+const CONFIG_DEFAULTS = {
+  startMonth: new Date().getMonth() + 1, startYear: new Date().getFullYear(),
+  currency: 'Bs', annualGoal: 0,
+  tasaIVA: 13, tasaIT: 3, tasaRCIVA: 12.5,
+  categoriasIngresos: ['Ventas','Servicios','Otros'],
+  categoriasGastos: ['Alquiler','Sueldos','Marketing','Servicios Públicos','Otros'],
+  categoriasCostos: ['Materia Prima','Producción','Logística','Otros'],
+  metodosPago: ['Efectivo','Tarjeta','Transferencia','Cheque'],
+  cuentaBancaria:    { activa: false },
+  cuentasBancarias:  [],
+  personal:          [],
+  previsionesOtras:  [],
+  chequesPendientes: [],
+}
+
 export function AppProvider({ children, project }) {
   const { isReadOnly } = useAuth()
   const projectId = project?.id
   const storageKey = `cn_${projectId}`
 
   const [theme, setThemeState] = useState(() => loadLocal('cn_theme', 'light'))
-  const [config, setConfigState] = useState(() => loadLocal(`${storageKey}_config`, {
-    startMonth: new Date().getMonth() + 1, startYear: new Date().getFullYear(),
-    currency: 'Bs', annualGoal: 0,
-    categoriasIngresos: ['Ventas','Servicios','Otros'],
-    categoriasGastos: ['Alquiler','Sueldos','Marketing','Servicios Públicos','Otros'],
-    categoriasCostos: ['Materia Prima','Producción','Logística','Otros'],
-    metodosPago: ['Efectivo','Tarjeta','Transferencia','Cheque'],
-  }))
-
+  const [config, setConfigState] = useState(() => ({ ...CONFIG_DEFAULTS, ...loadLocal(`${storageKey}_config`, {}) }))
   const [ingresos, setIngresos] = useState([])
   const [gastos, setGastos] = useState([])
   const [costos, setCostos] = useState([])
   const [presupuesto, setPresupuesto] = useState({})
   const [loadingData, setLoadingData] = useState(true)
 
-  useEffect(() => {
-    if (!projectId || projectId === '__new__') { setLoadingData(false); return }
-    fetchProjectData()
-  }, [projectId])
-
+  useEffect(() => { if (!projectId || projectId === '__new__') { setLoadingData(false); return }; fetchProjectData() }, [projectId])
   useEffect(() => { saveLocal(`${storageKey}_config`, config) }, [config])
   useEffect(() => { saveLocal('cn_theme', theme) }, [theme])
 
@@ -62,13 +66,14 @@ export function AppProvider({ children, project }) {
     if (ing.data) setIngresos(ing.data)
     if (gas.data) setGastos(gas.data)
     if (cos.data) setCostos(cos.data)
-    if (pres.data?.config) { setConfigState(prev => ({ ...prev, ...pres.data.config })); setPresupuesto(pres.data.presupuesto || {}) }
+    if (pres.data?.config) { setConfigState(prev => ({ ...CONFIG_DEFAULTS, ...prev, ...pres.data.config })); setPresupuesto(pres.data.presupuesto || {}) }
     setLoadingData(false)
   }
 
   const saveConfig = async (newConfig) => {
     setConfigState(newConfig)
-    await supabase.from('project_config').upsert({ project_id: projectId, config: newConfig, presupuesto })
+    const { error } = await supabase.from('project_config').upsert({ project_id: projectId, config: newConfig, presupuesto })
+    if (error) toast.error('Error al guardar la configuración')
   }
 
   const setConfig = useCallback((val) => {
@@ -83,17 +88,14 @@ export function AppProvider({ children, project }) {
     const date = new Date(item.fecha)
     const amount = item[amountKey] || 0
     const valorImpuesto = item.impuesto > 0 ? Math.round(amount * item.impuesto) / 100 : 0
-    const record = {
-      ...item, id: generateId(), project_id: projectId, type,
-      month: date.getMonth() + 1, year: date.getFullYear(),
-      valorImpuesto, totalNeto: Math.round((amount - valorImpuesto) * 100) / 100,
-    }
+    const record = { ...item, id: generateId(), project_id: projectId, type, month: date.getMonth() + 1, year: date.getFullYear(), valorImpuesto, totalNeto: Math.round((amount - valorImpuesto) * 100) / 100 }
     const { error } = await supabase.from('transactions').insert(record)
     if (!error) {
       if (type==='ingreso') setIngresos(p => [...p, record])
       else if (type==='gasto') setGastos(p => [...p, record])
       else setCostos(p => [...p, record])
-    } else { console.error(error) }
+      toast.success('Registro guardado correctamente')
+    } else { toast.error(`Error al guardar: ${error.message}`) }
   }
 
   const updateTransaction = async (type, id, data, amountKey) => {
@@ -106,7 +108,8 @@ export function AppProvider({ children, project }) {
     if (!error) {
       const setter = type==='ingreso' ? setIngresos : type==='gasto' ? setGastos : setCostos
       setter(p => p.map(x => x.id===id ? updated : x))
-    }
+      toast.success('Registro actualizado')
+    } else { toast.error(`Error al actualizar: ${error.message}`) }
   }
 
   const deleteTransaction = async (type, id) => {
@@ -115,7 +118,8 @@ export function AppProvider({ children, project }) {
     if (!error) {
       const setter = type==='ingreso' ? setIngresos : type==='gasto' ? setGastos : setCostos
       setter(p => p.filter(x => x.id !== id))
-    }
+      toast.success('Registro eliminado')
+    } else { toast.error(`Error al eliminar: ${error.message}`) }
   }
 
   const addIngreso = useCallback((item) => addTransaction('ingreso', item, 'ingresoTotal'), [projectId, isReadOnly])
@@ -141,6 +145,7 @@ export function AppProvider({ children, project }) {
     const a = document.createElement('a'); a.href = url
     a.download = `${project?.name || 'backup'}_${new Date().toISOString().split('T')[0]}.json`
     a.click(); URL.revokeObjectURL(url)
+    toast.success('Backup exportado correctamente')
   }, [config, ingresos, gastos, costos, presupuesto])
 
   const importData = useCallback(async (type, rows) => {
@@ -157,7 +162,8 @@ export function AppProvider({ children, project }) {
       if (type==='ingresos') setIngresos(p => [...p, ...processed])
       else if (type==='gastos') setGastos(p => [...p, ...processed])
       else setCostos(p => [...p, ...processed])
-    }
+      toast.success(`${processed.length} registros importados`)
+    } else { toast.error(`Error al importar: ${error.message}`) }
     return !error
   }, [projectId])
 
@@ -165,6 +171,7 @@ export function AppProvider({ children, project }) {
     try {
       const data = JSON.parse(jsonData)
       if (data.config) await saveConfig(data.config)
+      // Always recalculate month/year from fecha to avoid mismatched data
       const proc = (arr, type) => arr.map(item => {
         const date = new Date(item.fecha)
         const correctMonth = isNaN(date) ? (item.month || 1) : date.getMonth() + 1
@@ -174,24 +181,15 @@ export function AppProvider({ children, project }) {
       if (data.ingresos?.length) { const r = proc(data.ingresos,'ingreso'); await supabase.from('transactions').insert(r); setIngresos(r) }
       if (data.gastos?.length) { const r = proc(data.gastos,'gasto'); await supabase.from('transactions').insert(r); setGastos(r) }
       if (data.costos?.length) { const r = proc(data.costos,'costo'); await supabase.from('transactions').insert(r); setCostos(r) }
+      toast.success('Backup restaurado correctamente')
       return true
-    } catch { return false }
+    } catch { toast.error('Error al restaurar el backup'); return false }
   }, [projectId])
 
-  const clearAllData = useCallback(async () => {
-    if (isReadOnly) return
-    await supabase.from('transactions').delete().eq('project_id', projectId)
-    setIngresos([]); setGastos([]); setCostos([])
-  }, [projectId])
-
-  // Repairs month/year fields for ALL existing transactions by recalculating from 'fecha'.
-  // Use this when records were imported with mismatched month/year (e.g. via faulty backup).
+  // Repairs month/year for ALL existing transactions by recalculating from 'fecha'
   const repairMonthYear = useCallback(async () => {
-    if (isReadOnly) return { fixed: 0, error: true, message: 'Sin permisos de escritura' }
     let fixedCount = 0
     let errorCount = 0
-    let lastError = null
-
     const repairList = async (list, setter) => {
       const updates = []
       const fixed = list.map(item => {
@@ -207,44 +205,29 @@ export function AppProvider({ children, project }) {
       })
       for (const u of updates) {
         const { error } = await supabase.from('transactions').update({ month: u.month, year: u.year }).eq('id', u.id)
-        if (error) {
-          console.error('repairMonthYear update error:', error)
-          errorCount++
-          lastError = error
-        } else {
-          fixedCount++
-        }
+        if (error) { console.error('repairMonthYear error:', error); errorCount++ }
+        else fixedCount++
       }
       if (updates.length > 0) setter(fixed)
     }
-
     await repairList(ingresos, setIngresos)
     await repairList(gastos, setGastos)
     await repairList(costos, setCostos)
+    return { fixed: fixedCount, error: errorCount > 0, errorCount }
+  }, [ingresos, gastos, costos])
 
-    if (errorCount > 0) {
-      return { fixed: fixedCount, error: true, message: lastError?.message || 'Error desconocido al actualizar', errorCount }
-    }
-    return { fixed: fixedCount, error: false }
-  }, [ingresos, gastos, costos, isReadOnly])
-
-  // ============================================================
-  // RECURRING TEMPLATES (plantillas de gastos/ingresos/costos recurrentes)
-  // ============================================================
-  const [templates, setTemplates] = useState([])
-
-  useEffect(() => {
-    if (!projectId || projectId === '__new__') return
-    fetchTemplates()
+  const clearAllData = useCallback(async () => {
+    if (isReadOnly) return
+    const { error } = await supabase.from('transactions').delete().eq('project_id', projectId)
+    if (!error) { setIngresos([]); setGastos([]); setCostos([]); toast.success('Todos los datos fueron eliminados') }
+    else { toast.error(`Error: ${error.message}`) }
   }, [projectId])
 
+  const [templates, setTemplates] = useState([])
+  useEffect(() => { if (!projectId || projectId === '__new__') return; fetchTemplates() }, [projectId])
+
   const fetchTemplates = async () => {
-    const { data } = await supabase
-      .from('recurring_templates')
-      .select('*')
-      .eq('project_id', projectId)
-      .eq('active', true)
-      .order('created_at')
+    const { data } = await supabase.from('recurring_templates').select('*').eq('project_id', projectId).eq('active', true).order('created_at')
     if (data) setTemplates(data)
   }
 
@@ -252,86 +235,71 @@ export function AppProvider({ children, project }) {
     if (isReadOnly) return
     const record = { ...tpl, id: generateId(), project_id: projectId, active: true }
     const { error } = await supabase.from('recurring_templates').insert(record)
-    if (!error) setTemplates(prev => [...prev, record])
+    if (!error) { setTemplates(prev => [...prev, record]); toast.success('Plantilla creada') }
+    else { toast.error(`Error: ${error.message}`) }
   }, [projectId, isReadOnly])
+
+  const updateTemplate = useCallback(async (id, data) => {
+    if (isReadOnly) return
+    const { error } = await supabase.from('recurring_templates').update(data).eq('id', id)
+    if (!error) { setTemplates(prev => prev.map(t => t.id === id ? { ...t, ...data } : t)); toast.success('Plantilla actualizada') }
+    else { toast.error(`Error: ${error.message}`) }
+  }, [isReadOnly])
 
   const deleteTemplate = useCallback(async (id) => {
     if (isReadOnly) return
     const { error } = await supabase.from('recurring_templates').update({ active: false }).eq('id', id)
-    if (!error) setTemplates(prev => prev.filter(t => t.id !== id))
+    if (!error) { setTemplates(prev => prev.filter(t => t.id !== id)); toast.success('Plantilla eliminada') }
+    else { toast.error(`Error: ${error.message}`) }
   }, [isReadOnly])
 
-  // Returns templates of a given type that have NOT been registered this month yet
   const getPendingTemplates = useCallback((type, month, year) => {
     const typeMap = { ingreso: ingresos, gasto: gastos, costo: costos }
     const records = typeMap[type] || []
-    const usedThisMonth = new Set(
-      records.filter(r => r.month === month && r.year === year).map(r => `${r.categoria}|${r.descripcion}`)
-    )
-    return templates
-      .filter(t => t.type === type)
-      .filter(t => !usedThisMonth.has(`${t.categoria}|${t.descripcion}`))
+    const usedThisMonth = new Set(records.filter(r => r.month === month && r.year === year).map(r => `${r.categoria}|${r.descripcion}`))
+    return templates.filter(t => t.type === type).filter(t => !usedThisMonth.has(`${t.categoria}|${t.descripcion}`))
   }, [templates, ingresos, gastos, costos])
 
-  // ============================================================
-  // TAX PAYMENTS (previsión IVA / IT / RC-IVA vs pago real)
-  // ============================================================
   const [taxPayments, setTaxPayments] = useState([])
-
-  useEffect(() => {
-    if (!projectId || projectId === '__new__') return
-    fetchTaxPayments()
-  }, [projectId])
+  useEffect(() => { if (!projectId || projectId === '__new__') return; fetchTaxPayments() }, [projectId])
 
   const fetchTaxPayments = async () => {
-    const { data } = await supabase
-      .from('tax_payments')
-      .select('*')
-      .eq('project_id', projectId)
+    const { data } = await supabase.from('tax_payments').select('*').eq('project_id', projectId)
     if (data) setTaxPayments(data)
   }
 
   const saveTaxPayment = useCallback(async (taxType, periodKey, realPaid, paidDate, notes) => {
     if (isReadOnly) return
     const existing = taxPayments.find(t => t.tax_type === taxType && t.period_key === periodKey)
-    const record = {
-      id: existing?.id || generateId(),
-      project_id: projectId,
-      tax_type: taxType,
-      period_key: periodKey,
-      real_paid: realPaid,
-      paid_date: paidDate || null,
-      notes: notes || '',
-    }
+    const record = { id: existing?.id || generateId(), project_id: projectId, tax_type: taxType, period_key: periodKey, real_paid: realPaid, paid_date: paidDate || null, notes: notes || '' }
     const { error } = await supabase.from('tax_payments').upsert(record, { onConflict: 'project_id,tax_type,period_key' })
     if (!error) {
-      setTaxPayments(prev => {
-        const filtered = prev.filter(t => !(t.tax_type === taxType && t.period_key === periodKey))
-        return [...filtered, record]
-      })
-    }
+      setTaxPayments(prev => { const filtered = prev.filter(t => !(t.tax_type === taxType && t.period_key === periodKey)); return [...filtered, record] })
+      toast.success('Pago de impuesto registrado')
+    } else { toast.error(`Error: ${error.message}`) }
     return !error
   }, [projectId, isReadOnly, taxPayments])
 
-  const getTaxPayment = useCallback((taxType, periodKey) => {
-    return taxPayments.find(t => t.tax_type === taxType && t.period_key === periodKey)
-  }, [taxPayments])
+  const getTaxPayment = useCallback((taxType, periodKey) => taxPayments.find(t => t.tax_type === taxType && t.period_key === periodKey), [taxPayments])
 
-  // Calculates "Previsto" for a given tax type and month, based on gross income (ingresoTotal, not netted)
+  const deleteTaxPayment = useCallback(async (taxType, periodKey) => {
+    if (isReadOnly) return
+    const { error } = await supabase.from('tax_payments').delete().eq('project_id', projectId).eq('tax_type', taxType).eq('period_key', periodKey)
+    if (!error) {
+      setTaxPayments(prev => prev.filter(t => !(t.tax_type === taxType && t.period_key === periodKey)))
+      toast.success('Pago eliminado')
+    } else { toast.error(`Error: ${error.message}`) }
+  }, [projectId, isReadOnly])
+
   const getTaxForecast = useCallback((taxType, month, year) => {
-    const RATES = { iva: 0.13, it: 0.03, rciva: 0.125 }
-    const grossIncome = ingresos
-      .filter(x => x.month === month && x.year === year)
-      .reduce((s, x) => s + (x.ingresoTotal || 0), 0)
+    const RATES = { iva: (config.tasaIVA ?? 13) / 100, it: (config.tasaIT ?? 3) / 100, rciva: (config.tasaRCIVA ?? 12.5) / 100 }
+    const grossIncome = ingresos.filter(x => x.month === month && x.year === year).reduce((s, x) => s + (x.ingresoTotal || 0), 0)
     return grossIncome * (RATES[taxType] || 0)
-  }, [ingresos])
+  }, [ingresos, config.tasaIVA, config.tasaIT, config.tasaRCIVA])
 
-  // RC-IVA forecast aggregated over a calendar quarter (sum of 3 months)
   const getQuarterTaxForecast = useCallback((taxType, quarterKey) => {
-    // quarterKey format: "2026-Q2"
     const [yearStr, qStr] = quarterKey.split('-Q')
-    const year = parseInt(yearStr)
-    const q = parseInt(qStr)
+    const year = parseInt(yearStr); const q = parseInt(qStr)
     const months = [(q-1)*3 + 1, (q-1)*3 + 2, (q-1)*3 + 3]
     return months.reduce((sum, m) => sum + getTaxForecast(taxType, m, year), 0)
   }, [getTaxForecast])
@@ -342,8 +310,16 @@ export function AppProvider({ children, project }) {
 
   const getTotalesPorPeriodo = useCallback((month, year) => {
     const ing = getIngresosPorPeriodo(month, year), gas = getGastosPorPeriodo(month, year), cos = getCostosPorPeriodo(month, year)
-    const ingresosNetos = ing.reduce((s,x) => s+x.totalNeto, 0), gastosTotales = gas.reduce((s,x) => s+x.totalNeto, 0), costosTotales = cos.reduce((s,x) => s+x.totalNeto, 0)
-    return { ingresosNetos, gastosTotales, costosTotales, ganancia: ingresosNetos-gastosTotales-costosTotales, impuestosIngresos: ing.reduce((s,x)=>s+x.valorImpuesto,0), impuestosGastos: gas.reduce((s,x)=>s+x.valorImpuesto,0) }
+    const ingresosBrutos    = ing.reduce((s,x) => s+(x.ingresoTotal||0), 0)
+    const retencionIngresos = ing.reduce((s,x) => s+(x.valorImpuesto||0), 0)
+    const ingresosNetos     = ing.reduce((s,x) => s+(x.totalNeto||0), 0)
+    const gastosTotales     = gas.reduce((s,x) => s+(x.totalNeto||0), 0)
+    const costosTotales     = cos.reduce((s,x) => s+(x.totalNeto||0), 0)
+    // Ganancia operativa = Ingresos Brutos - Gastos - Costos (impuestos son obligación aparte)
+    const ganancia          = ingresosBrutos - gastosTotales - costosTotales
+    // Ganancia neta = después de retención de impuestos sobre ingresos
+    const gananciaNeta      = ingresosNetos - gastosTotales - costosTotales
+    return { ingresosBrutos, retencionIngresos, ingresosNetos, gastosTotales, costosTotales, ganancia, gananciaNeta, impuestosIngresos: retencionIngresos, impuestosGastos: gas.reduce((s,x)=>s+(x.valorImpuesto||0),0) }
   }, [getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo])
 
   return (
@@ -354,8 +330,8 @@ export function AppProvider({ children, project }) {
       costos, addCosto, deleteCosto, updateCosto,
       presupuesto, updatePresupuesto,
       importData, exportData, importFromBackup, clearAllData, repairMonthYear,
-      templates, addTemplate, deleteTemplate, getPendingTemplates,
-      taxPayments, saveTaxPayment, getTaxPayment, getTaxForecast, getQuarterTaxForecast,
+      templates, addTemplate, updateTemplate, deleteTemplate, getPendingTemplates,
+      taxPayments, saveTaxPayment, deleteTaxPayment, getTaxPayment, getTaxForecast, getQuarterTaxForecast,
       getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo, getTotalesPorPeriodo,
     }}>
       {children}

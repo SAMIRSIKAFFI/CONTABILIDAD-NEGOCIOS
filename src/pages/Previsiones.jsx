@@ -95,7 +95,7 @@ const EMPTY_OTRA   = { id:"", descripcion:"", monto:0 };
 const EMPTY_CHEQUE = { id:"", cliente:"", descripcion:"", monto:0, fechaEmision:"", fechaVencimiento:"", cobrado:false };
 
 export default function Previsiones() {
-  const { config, setConfig, isReadOnly, getTaxForecast, getQuarterTaxForecast } = useApp();
+  const { config, setConfig, isReadOnly, getTaxForecast, getQuarterTaxForecast, getTaxPayment, ingresos, periods } = useApp();
   const cur = config.currency || "Bs";
 
   const personal          = config.personal          || [];
@@ -195,10 +195,40 @@ export default function Previsiones() {
   const totSaldoAguin = empleadosCalc.reduce((s,e)=>s+e.saldoAguin,0);
   const totSueldo     = personal.filter(e=>e.activo&&!e.fechaBaja).reduce((s,e)=>s+e.sueldo,0);
 
+  // Acumulado pendiente: suma todos los períodos donde NO se registró pago real
+  const ivaAcum = periods.reduce((sum, p) => {
+    const monthKey = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    const paid = getTaxPayment("iva", monthKey);
+    const forecast = getTaxForecast("iva", p.month, p.year);
+    if (forecast <= 0) return sum;
+    if (paid && paid.real_paid > 0) return sum; // ya pagado
+    return sum + forecast;
+  }, 0);
+
+  const itAcum = periods.reduce((sum, p) => {
+    const monthKey = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    const paid = getTaxPayment("it", monthKey);
+    const forecast = getTaxForecast("it", p.month, p.year);
+    if (forecast <= 0) return sum;
+    if (paid && paid.real_paid > 0) return sum;
+    return sum + forecast;
+  }, 0);
+
+  // RC-IVA acumulado por trimestres sin pagar
+  const quarters = [...new Set(periods.map(p => `${p.year}-Q${Math.ceil(p.month/3)}`))];
+  const rcAcum = quarters.reduce((sum, qKey) => {
+    const paid = getTaxPayment("rciva", qKey);
+    const forecast = getQuarterTaxForecast("rciva", qKey);
+    if (forecast <= 0) return sum;
+    if (paid && paid.real_paid > 0) return sum;
+    return sum + forecast;
+  }, 0);
+
+  // También mantener el mes actual para mostrar en las tarjetas individuales
   const ivaF  = getTaxForecast("iva",   curMonth, curYear);
   const itF   = getTaxForecast("it",    curMonth, curYear);
   const rcF   = getQuarterTaxForecast("rciva", `${curYear}-Q${curQ}`);
-  const totalImp   = ivaF + itF + rcF;
+  const totalImp   = ivaAcum + itAcum + rcAcum;
   const totalOtras = previsionesOtras.reduce((s,o)=>s+(o.monto||0),0);
   const totalPrev  = totSaldoIndem + totSaldoAguin + totalOtras + totalImp;
 
@@ -217,7 +247,7 @@ export default function Previsiones() {
       {/* ── Resumen ── */}
       <div className="grid-4" style={{ gap:14, marginBottom:24 }}>
         <SumCard label="Saldo Indem. + Aguinaldo" value={fmt(totSaldoIndem+totSaldoAguin, cur)} color="var(--accent-red)"   icon="👥" sub="Pendiente de pago" />
-        <SumCard label="Impuestos previstos"       value={fmt(totalImp, cur)}                    color="var(--accent-yellow)" icon="🧾" sub="IVA + IT + RC-IVA" />
+        <SumCard label="Impuestos previstos"       value={fmt(totalImp, cur)}                    color="var(--accent-yellow)" icon="🧾" sub="Acumulado pendiente" />
         <SumCard label="Otras previsiones"         value={fmt(totalOtras, cur)}                  color="#a78bfa"              icon="📝" sub={`${previsionesOtras.length} concepto(s)`} />
         <SumCard label="Cheques por cobrar"        value={fmt(totalCheques, cur)}                color="var(--accent-green)"  icon="💳" sub={`${chequesPend.length} pendiente(s)`} />
       </div>
@@ -419,9 +449,9 @@ export default function Previsiones() {
       ══════════════════════════════════════════════════════ */}
       <SectionHeader title="🧾 Impuestos Previstos" />
       <div className="grid-3" style={{ gap:14, marginBottom:24 }}>
-        <TaxPrevCard label="IVA" rate="13%" monto={ivaF} cur={cur} sub={`Mes actual — vence 16/${curMonth===12?1:curMonth+1}`} />
-        <TaxPrevCard label="IT"  rate="3%"  monto={itF}  cur={cur} sub={`Mes actual — vence 16/${curMonth===12?1:curMonth+1}`} />
-        <TaxPrevCard label="RC-IVA" rate="12.5%" monto={rcF} cur={cur} color="#a78bfa" sub={`Trimestre Q${curQ} — vence 16/${curQ*3+1>12?1:curQ*3+1}`} />
+        <TaxPrevCard label="IVA" rate="13%" monto={ivaF} acum={ivaAcum} cur={cur} sub={`Mes actual — vence 16/${curMonth===12?1:curMonth+1}`} />
+        <TaxPrevCard label="IT"  rate="3%"  monto={itF}  acum={itAcum}  cur={cur} sub={`Mes actual — vence 16/${curMonth===12?1:curMonth+1}`} />
+        <TaxPrevCard label="RC-IVA" rate="12.5%" monto={rcF} acum={rcAcum} cur={cur} color="#a78bfa" sub={`Trimestre Q${curQ} — vence 16/${curQ*3+1>12?1:curQ*3+1}`} />
       </div>
 
       {/* ══════════════════════════════════════════════════════
@@ -551,14 +581,22 @@ function SumCard({ label, value, color, icon, sub }) {
     </div>
   );
 }
-function TaxPrevCard({ label, rate, monto, cur, sub, color="var(--accent-yellow)" }) {
+function TaxPrevCard({ label, rate, monto, acum, cur, sub, color="var(--accent-yellow)" }) {
+  const hasAccum = acum !== undefined && acum !== monto;
   return (
     <div className="card" style={{ padding:"16px 18px" }}>
       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
         <span style={{ fontWeight:700, color:"var(--text)" }}>{label}</span>
         <span className="badge badge-blue">{rate}</span>
       </div>
-      <div style={{ fontSize:22, fontWeight:800, color }}>{fmt(monto,cur)}</div>
+      {hasAccum && acum > 0 && (
+        <div style={{ marginBottom:8, padding:"6px 10px", borderRadius:8, background:"rgba(239,64,96,0.08)", border:"1px solid rgba(239,64,96,0.2)" }}>
+          <div style={{ fontSize:11, color:"var(--text3)", marginBottom:2 }}>⚠️ ACUMULADO PENDIENTE</div>
+          <div style={{ fontSize:20, fontWeight:800, color:"var(--accent-red)" }}>{fmt(acum,cur)}</div>
+        </div>
+      )}
+      <div style={{ fontSize:13, color:"var(--text3)", marginBottom:2 }}>Mes actual</div>
+      <div style={{ fontSize:18, fontWeight:700, color }}>{fmt(monto,cur)}</div>
       <div style={{ fontSize:11, color:"var(--text3)", marginTop:4 }}>{sub}</div>
     </div>
   );
