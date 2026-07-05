@@ -211,10 +211,14 @@ export default function Banco() {
               const grad = BANK_GRADIENTS[c.banco] || CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
               const methods = new Set(c.metodosVinculados || []);
               const cutoff  = c.fechaSaldoInicial || "2000-01-01";
+              const matchCard = x => x.fecha >= cutoff && (
+                x.cuentaBancariaId === c.id ||
+                (!x.cuentaBancariaId && methods.has(x.metodoPago))
+              );
               let bal = c.saldoInicial || 0;
-              ingresos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).forEach(x => bal += (x.ingresoTotal || 0));
-              gastos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).forEach(x => bal -= (x.gastoTotal || 0));
-              costos.filter(x => x.fecha >= cutoff && methods.has(x.metodoPago)).forEach(x => bal -= (x.costoTotal || 0));
+              ingresos.filter(matchCard).forEach(x => bal += (x.ingresoTotal || 0));
+              gastos.filter(matchCard).forEach(x => bal -= (x.gastoTotal || 0));
+              costos.filter(matchCard).forEach(x => bal -= (x.costoTotal || 0));
               const isSelected = selectedCuenta?.id === c.id;
               return (
                 <div key={c.id} onClick={() => setSelectedId(c.id)} style={{
