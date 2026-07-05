@@ -134,7 +134,11 @@ export default function Ingresos() {
                 {!isReadOnly && (
                   <td>
                     <div className="td-actions">
-                      <button className="btn btn-ghost btn-sm" onClick={() => setModal({ mode: "edit", data: item })}>✏️</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => {
+                          const c = _allCuentas.find(c => c.id === item.cuentaBancariaId || c.banco === item.cuentaBancariaId);
+                          const cuentaVal = c ? `${c.banco || "Banco"} ···· ${String(c.numeroCuenta || c.id || "").slice(-4)} | ${c.id || c.banco}` : (item.cuentaBancariaId || "");
+                          setModal({ mode: "edit", data: { ...item, cuentaBancariaId: cuentaVal } });
+                        }}>✏️</button>
                       <button className="btn btn-danger btn-sm" onClick={() => confirm("¿Eliminar ingreso?") && deleteIngreso(item.id)}>🗑️</button>
                     </div>
                   </td>
