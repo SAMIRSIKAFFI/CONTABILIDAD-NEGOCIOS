@@ -211,10 +211,7 @@ export default function Banco() {
               const grad = BANK_GRADIENTS[c.banco] || CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
               const methods = new Set(c.metodosVinculados || []);
               const cutoff  = c.fechaSaldoInicial || "2000-01-01";
-              const matchCard = x => x.fecha >= cutoff && (
-                x.cuentaBancariaId === c.id ||
-                (!x.cuentaBancariaId && methods.has(x.metodoPago))
-              );
+              const matchCard = x => { if (!x.fecha || x.fecha < cutoff) return false; const hasCuenta = !!x.cuentaBancariaId; if (hasCuenta) return x.cuentaBancariaId === c.id; return methods.has(x.metodoPago); };
               let bal = c.saldoInicial || 0;
               ingresos.filter(matchCard).forEach(x => bal += (x.ingresoTotal || 0));
               gastos.filter(matchCard).forEach(x => bal -= (x.gastoTotal || 0));
@@ -452,3 +449,4 @@ function ModalCuenta({ data, metodosPago, currency, onSave, onClose }) {
     </div>
   );
 }
+
