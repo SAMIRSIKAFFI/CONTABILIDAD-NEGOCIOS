@@ -18,10 +18,12 @@ export default function Diario() {
   const dayGastos   = gastos.filter(x => x.fecha === selectedDate);
   const dayCostos   = costos.filter(x => x.fecha === selectedDate);
 
+  const ingresosBrutos = dayIngresos.reduce((s, x) => s + (x.ingresoTotal||0), 0);
   const ingresosNetos  = dayIngresos.reduce((s, x) => s + (x.totalNeto||0), 0);
   const gastosTotales  = dayGastos.reduce((s, x) => s + (x.totalNeto||0), 0);
   const costosTotales  = dayCostos.reduce((s, x) => s + (x.totalNeto||0), 0);
-  const ganancia       = ingresosNetos - gastosTotales - costosTotales;
+  // Bruto-based, igual que Monitor/Mensual/Anual, para que "Ganancia del Día" sume exacto contra "Ganancia del Mes"
+  const ganancia       = ingresosBrutos - gastosTotales - costosTotales;
 
   const todasTransacciones = [
     ...dayIngresos.map(x => ({ ...x, tipo: "Ingreso", bruto: x.ingresoTotal })),
@@ -82,7 +84,7 @@ export default function Diario() {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-title">Resumen del Día — {fmtDate(selectedDate)}</div>
         <div className="grid-4">
-          <StatBox label="Ingresos Brutos"  value={fmt(dayIngresos.reduce((s,x)=>s+(x.ingresoTotal||0),0), config.currency)} color="green" />
+          <StatBox label="Ingresos Brutos"  value={fmt(ingresosBrutos, config.currency)} color="green" />
           <StatBox label="Gastos Totales"   value={fmt(gastosTotales, config.currency)}  color="red" />
           <StatBox label="Costos Totales"   value={fmt(costosTotales, config.currency)}  color="yellow" />
           <StatBox label="Ganancia del Día" value={fmt(ganancia, config.currency)}        color={ganancia >= 0 ? "green" : "red"} />
@@ -96,7 +98,7 @@ export default function Diario() {
       </div>
 
       <div className="grid-3">
-        <CatTable title="Ingresos por Categoría (Bruto)" rows={groupByCat(dayIngresos, "ingresoTotal", "ingresoTotal")} cur={config.currency} color="green" />
+        <CatTable title="Ingresos por Categoría" rows={groupByCat(dayIngresos, "ingresoTotal", "totalNeto")} cur={config.currency} color="green" />
         <CatTable title="Gastos por Categoría"           rows={groupByCat(dayGastos,   "gastoTotal",   "totalNeto")}    cur={config.currency} color="red" />
         <CatTable title="Costos por Categoría"           rows={groupByCat(dayCostos,   "costoTotal",   "totalNeto")}    cur={config.currency} color="yellow" />
       </div>

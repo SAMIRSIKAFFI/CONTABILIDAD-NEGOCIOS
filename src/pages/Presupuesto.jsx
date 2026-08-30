@@ -6,7 +6,10 @@ export default function Presupuesto() {
   const { config, periods, presupuesto, updatePresupuesto, getIngresosPorPeriodo, getGastosPorPeriodo, getCostosPorPeriodo, isReadOnly } = useApp();
   const cur = config.currency;
 
-  const buildData = (type, categorias, getByPeriodo) => {
+  // Nota: el presupuesto hoy se guarda como un único total por tipo y mes (clave "__total__"),
+  // no desglosado por categoría — este helper antes recibía una lista de categorías que nunca
+  // llegó a usarse (se quitó ese parámetro muerto).
+  const buildData = (type, getByPeriodo) => {
     return periods.map(p => {
       const items = getByPeriodo(p.month, p.year);
       const actual = items.reduce((s, x) => s + (x.totalNeto || 0), 0);
@@ -15,9 +18,9 @@ export default function Presupuesto() {
     });
   };
 
-  const ingData = buildData("ingresos", config.categoriasIngresos, getIngresosPorPeriodo);
-  const gasData = buildData("gastos", config.categoriasGastos, getGastosPorPeriodo);
-  const cosData = buildData("costos", config.categoriasCostos, getCostosPorPeriodo);
+  const ingData = buildData("ingresos", getIngresosPorPeriodo);
+  const gasData = buildData("gastos", getGastosPorPeriodo);
+  const cosData = buildData("costos", getCostosPorPeriodo);
 
   const totPresIng = ingData.reduce((s, x) => s + x.presupuestado, 0);
   const totActIng = ingData.reduce((s, x) => s + x.actual, 0);

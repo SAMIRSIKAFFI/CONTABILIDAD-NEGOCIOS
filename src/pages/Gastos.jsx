@@ -23,8 +23,10 @@ export default function Gastos() {
     { key: "descripcion",label: "Descripción",    type: "text" },
     { key: "metodoPago", label: "Método de Pago", type: "select",  options: config.metodosPago },
     { key: "gastoTotal", label: "Gasto Total",    type: "number",  required: true, step: "0.01", min: "0" },
-    { key: "impuesto",   label: "Impuesto (%)",   type: "number",  step: "0.01", min: "0" },
     { key: "notas",      label: "Notas",          type: "textarea" },
+    // "Impuesto (%)" se quitó de este formulario a propósito: reducía el monto neto del gasto,
+    // inflando la utilidad mostrada en Monitor/Mensual/Anual/Flujo/Balance/Presupuesto.
+    // Los registros históricos con impuesto>0 siguen visibles en la tabla, solo no se puede cargar uno nuevo.
   ];
 
   const totBruto = gastos.reduce((s, x) => s + (x.gastoTotal || 0), 0);
@@ -40,7 +42,7 @@ export default function Gastos() {
   const handleUseTemplate = (tpl) => {
     setModal({
       mode: "add",
-      data: { fecha: new Date().toISOString().split("T")[0], categoria: tpl.categoria, descripcion: tpl.descripcion, metodoPago: tpl.metodoPago, impuesto: tpl.impuesto || 0, notas: tpl.notas || "", gastoTotal: 0 },
+      data: { fecha: new Date().toISOString().split("T")[0], categoria: tpl.categoria, descripcion: tpl.descripcion, metodoPago: tpl.metodoPago, impuesto: 0, notas: tpl.notas || "", gastoTotal: 0 },
     });
   };
 

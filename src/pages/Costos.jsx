@@ -23,8 +23,9 @@ export default function Costos() {
     { key: "descripcion",label: "Descripción",    type: "text" },
     { key: "metodoPago", label: "Método de Pago", type: "select",  options: config.metodosPago },
     { key: "costoTotal", label: "Costo Total",    type: "number",  required: true, step: "0.01", min: "0" },
-    { key: "impuesto",   label: "Impuesto (%)",   type: "number",  step: "0.01", min: "0" },
     { key: "notas",      label: "Notas",          type: "textarea" },
+    // "Impuesto (%)" se quitó a propósito, mismo motivo que en Gastos.jsx: reducía el costo neto
+    // y eso inflaba la utilidad mostrada en las pestañas de resumen.
   ];
 
   const totBruto = costos.reduce((s, x) => s + (x.costoTotal || 0), 0);
@@ -40,7 +41,7 @@ export default function Costos() {
   const handleUseTemplate = (tpl) => {
     setModal({
       mode: "add",
-      data: { fecha: new Date().toISOString().split("T")[0], categoria: tpl.categoria, descripcion: tpl.descripcion, metodoPago: tpl.metodoPago, impuesto: tpl.impuesto || 0, notas: tpl.notas || "", costoTotal: 0 },
+      data: { fecha: new Date().toISOString().split("T")[0], categoria: tpl.categoria, descripcion: tpl.descripcion, metodoPago: tpl.metodoPago, impuesto: 0, notas: tpl.notas || "", costoTotal: 0 },
     });
   };
 

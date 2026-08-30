@@ -23,9 +23,10 @@ function ExportBtn({ label, count, onClick, color }) {
 }
 
 export default function Anual() {
-  const { config, periods, getTotalesPorPeriodo, ingresos, gastos, costos } = useApp();
+  const { config, periods, getTotalesPorPeriodo, ingresos, gastos, costos, taxPayments } = useApp();
 
   const monthlyData = periods.map(p => ({ ...p, ...getTotalesPorPeriodo(p.month, p.year) }));
+  const yearActivo = periods[0]?.year || new Date().getFullYear();
 
   const totalIngresos      = monthlyData.reduce((s, x) => s + (x.ingresosBrutos || 0), 0);  // brutos
   const totalIngresosNetos = monthlyData.reduce((s, x) => s + (x.ingresosNetos || 0), 0);
@@ -34,9 +35,10 @@ export default function Anual() {
   const totalCostos        = monthlyData.reduce((s, x) => s + (x.costosTotales || 0), 0);
   const totalImpuestosIng  = totalRetencion;
 
-  const impuestosGastosReales = gastos
-    .filter(g => (g.categoria || "").toUpperCase().includes("IMPUESTO"))
-    .reduce((s, g) => s + (g.totalNeto || 0), 0);
+  // Impuestos realmente pagados = suma de tax_payments del año, la misma fuente que usa la pestaña Impuestos
+  const impuestosPagadosReales = taxPayments
+    .filter(t => (t.period_key || "").startsWith(`${yearActivo}-`))
+    .reduce((s, t) => s + (t.real_paid || 0), 0);
 
   // Ganancia operativa = Brutos - Gastos - Costos (impuestos son obligación aparte)
   const gananciaActual = totalIngresos - totalGastos - totalCostos;
@@ -47,7 +49,6 @@ export default function Anual() {
   const cumData = monthlyData.map(m => { acumulado += m.ganancia || 0; return { ...m, acumulado }; });
 
   // Filtrar por año del período activo
-  const yearActivo = periods[0]?.year || new Date().getFullYear();
   const ingAnio = ingresos.filter(x => x.year === yearActivo);
   const gasAnio = gastos.filter(x => x.year === yearActivo);
   const cosAnio = costos.filter(x => x.year === yearActivo);
@@ -124,8 +125,8 @@ export default function Anual() {
         </div>
         <div className="card">
           <div className="card-title">Impuestos Pagados (IVA, IT, RC-IVA)</div>
-          <div className="stat-value" style={{ color: "var(--accent-purple)" }}>{fmt(impuestosGastosReales, config.currency)}</div>
-          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>Suma de gastos en categorías "Impuesto"</div>
+          <div className="stat-value" style={{ color: "var(--accent-purple)" }}>{fmt(impuestosPagadosReales, config.currency)}</div>
+          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>Suma de pagos reales registrados en la pestaña Impuestos</div>
         </div>
       </div>
 
@@ -175,7 +176,7 @@ export default function Anual() {
               {cumData.map(m => (
                 <tr key={m.key}>
                   <td style={{ fontWeight: 500, color: "var(--text)" }}>{m.label}</td>
-                  <td className="num-positive" style={{ textAlign: "right" }}>{fmt(m.ingresosNetos || 0, config.currency)}</td>
+                  <td className="num-positive" style={{ textAlign: "right" }}>{fmt(m.ingresosBrutos || 0, config.currency)}</td>
                   <td className="num-negative" style={{ textAlign: "right" }}>{fmt(m.gastosTotales || 0, config.currency)}</td>
                   <td style={{ color: "var(--accent-yellow)", fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{fmt(m.costosTotales || 0, config.currency)}</td>
                   <td style={{ color: (m.ganancia || 0) >= 0 ? "var(--accent-green)" : "var(--accent-red)", fontWeight: 700, fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{fmt(m.ganancia || 0, config.currency)}</td>

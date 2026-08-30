@@ -150,16 +150,21 @@ const RCIVA_CASA_SAMIR = [
 export default function Impuestos() {
   const { config, periods, getTaxForecast, getQuarterTaxForecast, getTaxPayment, saveTaxPayment, deleteTaxPayment, isReadOnly, project } = useApp();
 
-  // Seleccionar datos históricos según el proyecto activo
-  const nombreProyecto = (project?.name || "").toLowerCase();
-  const esOficinaCentral = nombreProyecto.includes("oficina");
-  const esCasaSamir      = nombreProyecto.includes("samir");
-  const HISTORICO_IVA_IT = esOficinaCentral ? HISTORICO_OFICINA_CENTRAL
-                         : esCasaSamir      ? HISTORICO_CASA_SAMIR
-                         :                    HISTORICO_CASA_FAMILIA;
-  const HISTORICO_RCIVA  = esOficinaCentral ? RCIVA_OFICINA_CENTRAL
-                         : esCasaSamir      ? RCIVA_CASA_SAMIR
-                         :                    RCIVA_CASA_FAMILIA;
+  // Datos históricos puntuales de una migración única (Oct-2024 → Jun-2026) para tres
+  // inmuebles concretos. Se emparejan por NOMBRE EXACTO (no por substring) y, si el
+  // proyecto activo no es exactamente uno de estos tres, NO se ofrece la importación —
+  // antes esto caía por defecto en los datos de Casa Familia para cualquier proyecto
+  // no reconocido, lo cual podía insertar montos reales equivocados sin avisar.
+  const nombreProyecto = (project?.name || "").trim().toUpperCase();
+  const HISTORICO_POR_PROYECTO = {
+    "CASA FAMILIA - ORURO": { ivaIt: HISTORICO_CASA_FAMILIA, rciva: RCIVA_CASA_FAMILIA },
+    "OFICINA CENTRAL":      { ivaIt: HISTORICO_OFICINA_CENTRAL, rciva: RCIVA_OFICINA_CENTRAL },
+    "CASA SAMIR - ORURO":   { ivaIt: HISTORICO_CASA_SAMIR, rciva: RCIVA_CASA_SAMIR },
+  };
+  const historicoProyecto = HISTORICO_POR_PROYECTO[nombreProyecto] || null;
+  const historicoDisponible = !!historicoProyecto;
+  const HISTORICO_IVA_IT = historicoProyecto?.ivaIt || [];
+  const HISTORICO_RCIVA  = historicoProyecto?.rciva || [];
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -221,7 +226,7 @@ export default function Impuestos() {
             RC-IVA (12.5%) — se paga el <strong>16 del mes siguiente al trimestre</strong>
           </p>
         </div>
-        {!isReadOnly && (
+        {!isReadOnly && historicoDisponible && (
           <div style={{ display:"flex", gap:8 }}>
             {importDone && <span style={{ fontSize:12, color:"var(--accent-green)", fontWeight:700, alignSelf:"center" }}>✅ Histórico importado</span>}
             <button className="btn btn-ghost" onClick={() => setShowImport(true)}>
@@ -241,6 +246,7 @@ export default function Impuestos() {
             </div>
             <div className="modal-body">
               <div style={{ marginBottom:14, padding:"10px 14px", background:"rgba(79,142,247,0.08)", borderRadius:8, fontSize:12, color:"var(--text2)" }}>
+                <div style={{ marginBottom:4 }}>🏢 Inmueble: <strong>{project?.name}</strong> — verifica que sea el correcto antes de continuar.</div>
                 <div>📋 <strong>{pendientes.length} períodos IVA/IT</strong> (Oct 2024 → Jun 2026) + <strong>{HISTORICO_RCIVA.length} trimestres RC-IVA</strong></div>
                 {yaExisten.length > 0 && <div style={{ color:"var(--accent-green)", marginTop:4 }}>✅ {yaExisten.length} períodos IVA/IT ya cargados — se omitirán (usa "Reimportar" para sobreescribir)</div>}
                 <div style={{ marginTop:6, color:"#a87c0a" }}>⚠️ RC-IVA Q1-2025 no incluido — carga manual requerida</div>

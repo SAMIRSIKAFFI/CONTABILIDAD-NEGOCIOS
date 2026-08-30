@@ -37,9 +37,21 @@ const CONFIG_DEFAULTS = {
 }
 
 export function AppProvider({ children, project }) {
-  const { isReadOnly } = useAuth()
+  const { isReadOnly: globalReadOnly, isSuperAdmin, user } = useAuth()
   const projectId = project?.id
   const storageKey = `cn_${projectId}`
+
+  // Rol asignado a este usuario específicamente para ESTE proyecto (Admin → Asignaciones).
+  // Un superadmin nunca queda de solo lectura (coincide con la política RLS de superadmin).
+  // Si hay un rol de proyecto asignado, manda sobre el rol global para decidir solo-lectura;
+  // si no hay asignación de proyecto, se respeta el rol global como antes.
+  const [projectRole, setProjectRole] = useState(null)
+  useEffect(() => {
+    if (!projectId || projectId === '__new__' || !user?.id || isSuperAdmin) { setProjectRole(null); return }
+    supabase.from('project_members').select('role').eq('project_id', projectId).eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setProjectRole(data?.role || null))
+  }, [projectId, user?.id, isSuperAdmin])
+  const isReadOnly = !isSuperAdmin && (projectRole ? projectRole === 'readonly' : globalReadOnly)
 
   const [theme, setThemeState] = useState(() => loadLocal('cn_theme', 'light'))
   const [config, setConfigState] = useState(() => ({ ...CONFIG_DEFAULTS, ...loadLocal(`${storageKey}_config`, {}) }))
@@ -220,8 +232,12 @@ export function AppProvider({ children, project }) {
   const getPendingTemplates = useCallback((type, month, year) => {
     const typeMap = { ingreso: ingresos, gasto: gastos, costo: costos }
     const records = typeMap[type] || []
-    const usedThisMonth = new Set(records.filter(r => r.month === month && r.year === year).map(r => `${r.categoria}|${r.descripcion}`))
-    return templates.filter(t => t.type === type).filter(t => !usedThisMonth.has(`${t.categoria}|${t.descripcion}`))
+    // Se compara por categoría + método de pago (ambos son selects de valores fijos), no por
+    // descripción libre: antes exigía coincidencia EXACTA de la descripción, así que si al
+    // registrar la transacción se cambiaba una coma o se agregaba el mes, la plantilla seguía
+    // marcada "pendiente" para siempre aunque ya se hubiera usado ese mes.
+    const usedThisMonth = new Set(records.filter(r => r.month === month && r.year === year).map(r => `${r.categoria}|${r.metodoPago}`))
+    return templates.filter(t => t.type === type).filter(t => !usedThisMonth.has(`${t.categoria}|${t.metodoPago}`))
   }, [templates, ingresos, gastos, costos])
 
   const [taxPayments, setTaxPayments] = useState([])

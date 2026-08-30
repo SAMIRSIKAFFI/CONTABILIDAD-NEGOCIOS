@@ -7,7 +7,9 @@ export default function Flujo() {
 
   const data = periods.map(p => {
     const t = getTotalesPorPeriodo(p.month, p.year);
-    return { ...p, ingresos: t.ingresosNetos || 0, egresos: (t.gastosTotales || 0) + (t.costosTotales || 0), resultado: t.ganancia || 0 };
+    const ingresos = t.ingresosNetos || 0;
+    const egresos = (t.gastosTotales || 0) + (t.costosTotales || 0);
+    return { ...p, ingresos, egresos, resultado: ingresos - egresos };
   });
 
   let acum = 0;
