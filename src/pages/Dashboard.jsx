@@ -136,8 +136,8 @@ export default function Dashboard() {
     // ── IVA/IT: se verifican sobre el MES ANTERIOR (ya vencido o a punto de vencer)
     // El impuesto del mes M se paga el 16 del mes M+1
     const checkTaxMonth = (m, y) => {
-      const deadline = new Date(y === curYear && m === 12 ? curYear + 1 : y,
-        m === 12 ? 0 : m, 16); // día 16 del mes M+1
+      const deadline = new Date(m === 12 ? y + 1 : y,
+        m === 12 ? 0 : m, 16); // día 16 del mes M+1 (el año siempre avanza en diciembre, sin importar si y===curYear)
       const isPast    = today > deadline;
       const daysLeft  = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
       const key = `${y}-${String(m).padStart(2, "0")}`;

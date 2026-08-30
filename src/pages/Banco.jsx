@@ -30,6 +30,34 @@ const BANK_GRADIENTS = {
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
+// Saldo actual de una cuenta: saldo inicial + ingresos - gastos - costos de las transacciones
+// que pertenecen a ella, desde la fecha de saldo inicial. Única fuente de esta cuenta —
+// antes esta misma cuenta se recalculaba de forma independiente en 3 lugares distintos.
+// Coincide primero por cuentaBancariaId (la forma correcta, seleccionada explícitamente al
+// cargar la transacción); si una transacción antigua no tiene cuentaBancariaId, cae al
+// método de pago vinculado como respaldo (compatibilidad con datos previos a ese campo).
+function computeSaldoCuenta(cuenta, ingresos, gastos, costos) {
+  const methods = new Set(cuenta.metodosVinculados || []);
+  const cutoff = cuenta.fechaSaldoInicial || "2000-01-01";
+  const match = x => x.fecha >= cutoff && (
+    x.cuentaBancariaId === cuenta.id ||
+    (!x.cuentaBancariaId && methods.has(x.metodoPago))
+  );
+  let bal = cuenta.saldoInicial || 0;
+  ingresos.filter(match).forEach(x => bal += (x.ingresoTotal || 0));
+  gastos.filter(match).forEach(x => bal -= (x.gastoTotal || 0));
+  costos.filter(match).forEach(x => bal -= (x.costoTotal || 0));
+  return bal;
+}
+
+// Métodos vinculados a una cuenta que ya no existen en Configuración → Métodos de Pago.
+// Las transacciones históricas con ese método siguen en la base, pero dejan de sumarse
+// al saldo de la cuenta sin ningún aviso — esto detecta el caso para poder avisar.
+function metodosHuerfanos(cuenta, metodosPagoVigentes) {
+  const vigentes = new Set(metodosPagoVigentes || []);
+  return (cuenta.metodosVinculados || []).filter(m => !vigentes.has(m));
+}
+
 function downloadCSV(content, filename) {
   const bom = "﻿";
   const blob = new Blob([bom + content], { type: "text/csv;charset=utf-8;" });
@@ -120,21 +148,15 @@ export default function Banco() {
 
   // ── Saldo total de TODAS las cuentas ─────────────────────────
   const totalAllAccounts = useMemo(() => {
-    return cuentas.reduce((total, cuenta) => {
-      const cid     = cuenta.id;
-      const methods = new Set(cuenta.metodosVinculados || []);
-      const cutoff  = cuenta.fechaSaldoInicial || "2000-01-01";
-      const match = x => x.fecha >= cutoff && (
-        x.cuentaBancariaId === cid ||
-        (!x.cuentaBancariaId && methods.has(x.metodoPago))
-      );
-      let bal = cuenta.saldoInicial || 0;
-      ingresos.filter(match).forEach(x => bal += (x.ingresoTotal || 0));
-      gastos.filter(match).forEach(x => bal -= (x.gastoTotal || 0));
-      costos.filter(match).forEach(x => bal -= (x.costoTotal || 0));
-      return total + bal;
-    }, 0);
+    return cuentas.reduce((total, cuenta) => total + computeSaldoCuenta(cuenta, ingresos, gastos, costos), 0);
   }, [cuentas, ingresos, gastos, costos]);
+
+  // ── Cuentas con métodos de pago vinculados que ya no existen en Configuración ──
+  const cuentasConMetodoHuerfano = useMemo(() => {
+    return cuentas
+      .map(c => ({ cuenta: c, huerfanos: metodosHuerfanos(c, config.metodosPago) }))
+      .filter(x => x.huerfanos.length > 0);
+  }, [cuentas, config.metodosPago]);
 
   // ── Chart ─────────────────────────────────────────────────────
   const chartData = useMemo(() => {
@@ -188,6 +210,17 @@ export default function Banco() {
         </div>
       </div>
 
+      {cuentasConMetodoHuerfano.length > 0 && (
+        <div style={{ marginBottom: 16, padding: "10px 16px", background: "rgba(249,200,70,0.10)", border: "1px solid rgba(249,200,70,0.35)", borderRadius: 10, fontSize: 12.5, color: "var(--text2)" }}>
+          ⚠️ {cuentasConMetodoHuerfano.map(({ cuenta, huerfanos }) => (
+            <span key={cuenta.id}>
+              La cuenta <strong>{cuenta.banco}</strong> tiene vinculado el método de pago {huerfanos.map(h => `"${h}"`).join(", ")}, que ya no existe en Configuración → Métodos de Pago.
+              Las transacciones históricas con ese método <strong>ya no se están sumando</strong> al saldo de esta cuenta.{" "}
+            </span>
+          ))}
+        </div>
+      )}
+
       {cuentas.length === 0 ? (
         /* ── Sin cuentas ── */
         <div style={{ maxWidth: 480, margin: "40px auto", textAlign: "center" }}>
@@ -209,13 +242,7 @@ export default function Banco() {
           <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8, marginBottom: 20 }}>
             {cuentas.map((c, idx) => {
               const grad = BANK_GRADIENTS[c.banco] || CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
-              const methods = new Set(c.metodosVinculados || []);
-              const cutoff  = c.fechaSaldoInicial || "2000-01-01";
-              const matchCard = x => { if (!x.fecha || x.fecha < cutoff) return false; const hasCuenta = !!x.cuentaBancariaId; if (hasCuenta) return x.cuentaBancariaId === c.id; return methods.has(x.metodoPago); };
-              let bal = c.saldoInicial || 0;
-              ingresos.filter(matchCard).forEach(x => bal += (x.ingresoTotal || 0));
-              gastos.filter(matchCard).forEach(x => bal -= (x.gastoTotal || 0));
-              costos.filter(matchCard).forEach(x => bal -= (x.costoTotal || 0));
+              const bal = computeSaldoCuenta(c, ingresos, gastos, costos);
               const isSelected = selectedCuenta?.id === c.id;
               return (
                 <div key={c.id} onClick={() => setSelectedId(c.id)} style={{

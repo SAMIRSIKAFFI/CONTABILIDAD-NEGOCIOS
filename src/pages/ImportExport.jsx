@@ -9,6 +9,7 @@ export default function ImportExport() {
   const [csvType, setCsvType] = useState("ingresos");
   const [csvMapping, setCsvMapping] = useState({});
   const [csvRows, setCsvRows] = useState([]);
+  const [amountGuessed, setAmountGuessed] = useState(false); // true si el monto se adivinó por heurística, no por nombre de columna
   const fileRef = useRef();
   const backupRef = useRef();
 
@@ -92,15 +93,20 @@ export default function ImportExport() {
         });
 
         const amtField = csvType === "ingresos" ? "ingresoTotal" : csvType === "gastos" ? "gastoTotal" : "costoTotal";
+        let guessed = false;
         if (!autoMap[amtField] && rows.length > 0) {
+          // No hubo columna cuyo nombre coincidiera con un alias conocido de "monto" —
+          // se elige la columna numérica con mayor suma como mejor intento, pero es una
+          // adivinanza: podría ser, por ejemplo, un número de factura en vez de un monto.
           let bestCol = null, bestSum = 0;
           headers.forEach(h => {
             const sum = rows.reduce((s, r) => s + (parseFloat((r[h] || "").replace(/[^0-9.-]/g, "")) || 0), 0);
             if (sum > bestSum) { bestSum = sum; bestCol = h; }
           });
-          if (bestCol) autoMap[amtField] = bestCol;
+          if (bestCol) { autoMap[amtField] = bestCol; guessed = true; }
         }
 
+        setAmountGuessed(guessed);
         setCsvMapping(autoMap);
         showMsg(`✅ Archivo cargado: ${rows.length} filas, ${headers.length} columnas detectadas`);
       } catch (err) {
@@ -216,17 +222,25 @@ export default function ImportExport() {
               <div style={{ marginTop:16 }}>
                 <div className="section-title">Mapeo de Columnas</div>
                 <p style={{ fontSize:12, color:"var(--text2)", marginBottom:12 }}>Columnas encontradas: <strong style={{color:"var(--accent)"}}>{csvPreview.headers.join(" | ")}</strong></p>
+                {amountGuessed && (
+                  <div style={{ padding:"8px 12px", background:"rgba(249,200,70,0.14)", border:"1px solid rgba(249,200,70,0.35)", borderRadius:8, marginBottom:12, color:"#a87c0a", fontSize:12 }}>
+                    ⚠️ No encontré una columna claramente llamada "monto" — elegí <strong>{csvMapping[csvType === "ingresos" ? "ingresoTotal" : csvType === "gastos" ? "gastoTotal" : "costoTotal"]}</strong> por ser la columna numérica con la suma más alta. Verifica en la vista previa de abajo que sea realmente el monto y no, por ejemplo, un número de factura.
+                  </div>
+                )}
                 <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
-                  {FIELDS[csvType].map(field => (
+                  {FIELDS[csvType].map(field => {
+                    const amtField = csvType === "ingresos" ? "ingresoTotal" : csvType === "gastos" ? "gastoTotal" : "costoTotal";
+                    const isGuessedAmount = amountGuessed && field === amtField;
+                    return (
                     <div key={field} style={{ display:"flex", alignItems:"center", gap:10 }}>
                       <span style={{ width:110, fontSize:12, color:"var(--text2)", fontWeight:700, flexShrink:0 }}>{field}</span>
-                      <select className="form-select" style={{ flex:1, fontSize:12, padding:"5px 8px" }} value={csvMapping[field] || ""} onChange={e => setCsvMapping(prev => ({ ...prev, [field]: e.target.value }))}>
+                      <select className="form-select" style={{ flex:1, fontSize:12, padding:"5px 8px", borderColor: isGuessedAmount ? "#a87c0a" : undefined }} value={csvMapping[field] || ""} onChange={e => setCsvMapping(prev => ({ ...prev, [field]: e.target.value }))}>
                         <option value="">-- no mapear --</option>
                         {csvPreview.headers.map(h => <option key={h} value={h}>{h}</option>)}
                       </select>
-                      {csvMapping[field] && <span style={{color:"var(--accent-green)", fontSize:16}}>✓</span>}
+                      {isGuessedAmount ? <span style={{color:"#a87c0a", fontSize:16}} title="Detectado por adivinanza, verifica">⚠️</span> : csvMapping[field] && <span style={{color:"var(--accent-green)", fontSize:16}}>✓</span>}
                     </div>
-                  ))}
+                  );})}
                 </div>
                 <p style={{ fontSize:12, color:"var(--text3)", marginBottom:8 }}>Vista previa ({csvPreview.sample.length} de {csvRows.length} filas):</p>
                 <div className="table-wrap" style={{ marginBottom:16, maxHeight:200, overflowY:"auto" }}>

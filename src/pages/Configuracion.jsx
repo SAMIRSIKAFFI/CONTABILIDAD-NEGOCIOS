@@ -24,6 +24,15 @@ export default function Configuracion() {
     setConfig(prev => ({ ...prev, [key]: prev[key].filter((_, i) => i !== idx) }));
   };
 
+  // El "Periodo de Inicio" define una ventana fija de 12 meses (usada por Mensual/Anual/
+  // Presupuesto/Impuestos) que no avanza sola. Si el mes actual quedó fuera de esa ventana,
+  // esas pestañas dejan de mostrar el año en curso hasta que se actualice a mano.
+  const now = new Date();
+  const startIndex = config.startYear * 12 + (config.startMonth - 1);
+  const endIndex = startIndex + 11;
+  const nowIndex = now.getFullYear() * 12 + now.getMonth();
+  const periodoDesactualizado = nowIndex > endIndex;
+
   return (
     <div>
       <div className="page-header">
@@ -42,6 +51,11 @@ export default function Configuracion() {
       {/* Top settings: period + currency, side by side, visually distinct */}
       <div className="grid-2" style={{ gap: 20, marginBottom: 24 }}>
         <SettingCard icon="📅" iconBg="linear-gradient(135deg,#4f8ef7,#3d7adb)" title="Periodo de Inicio" subtitle="Define el primer mes del ejercicio">
+          {periodoDesactualizado && (
+            <div style={{ padding: "8px 12px", background: "rgba(249,200,70,0.14)", border: "1px solid rgba(249,200,70,0.35)", borderRadius: 8, marginBottom: 12, color: "#a87c0a", fontSize: 12.5 }}>
+              ⚠️ Este período ya no cubre el mes actual — Mensual, Anual, Presupuesto e Impuestos van a mostrar meses desactualizados hasta que actualices el año/mes de inicio.
+            </div>
+          )}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Mes de Inicio</label>
